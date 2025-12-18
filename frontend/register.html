@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - HomeService</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <meta name="google-signin-client_id" content="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                HomeService
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="#services">Services</a></li>
+                <li id="authLinks">
+                    <a href="login.html" class="nav-btn">Login</a>
+                </li>
+                <li id="userLinks" style="display: none;" class="user-nav-links">
+                    <span id="userGreeting" class="user-greeting"></span>
+                    <a href="#" id="dashboardLink" class="nav-btn nav-btn-primary">Dashboard</a>
+                    <a href="#" id="logoutLink" class="nav-btn nav-logout" onclick="handleLogout(event)">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-box">
+            <h2>Create Your Account</h2>
+            <p class="auth-subtitle">Join HomeService to connect with trusted professionals</p>
+            
+            <!-- User Type Selection (Required First) -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="userTypeTop" style="font-weight: 600; margin-bottom: 8px; display: block;">I want to register as: <span style="color: #ef4444;">*</span></label>
+                <select id="userTypeTop" name="userTypeTop" required style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 16px;">
+                    <option value="">-- Select Your Role --</option>
+                    <option value="customer">Customer (I need services)</option>
+                    <option value="provider">Service Provider (I offer services)</option>
+                </select>
+                <small style="color: #666; display: block; margin-top: 5px;">Please select your role before proceeding</small>
+            </div>
+            
+            <!-- Google Sign-In Button -->
+            <div id="g_id_onload"
+                 data-client_id="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com"
+                 data-callback="handleGoogleRegister">
+            </div>
+            <div class="google-btn-wrapper">
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-size="large"
+                     data-theme="outline"
+                     data-text="signup_with"
+                     data-shape="rectangular"
+                     data-logo_alignment="left"
+                     data-width="350">
+                </div>
+            </div>
+            
+            <div class="auth-divider">
+                <span>OR</span>
+            </div>
+            
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="fullName">Full Name</label>
+                    <input type="text" id="fullName" name="fullName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required minlength="6">
+                    <small>Minimum 6 characters</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+
+                <div class="form-group" style="display: none;">
+                    <label for="userType">Register As</label>
+                    <select id="userType" name="userType" required>
+                        <option value="">Select Type</option>
+                        <option value="customer">Customer</option>
+                        <option value="provider">Service Provider</option>
+                    </select>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="terms" name="terms" required>
+                        I agree to the Terms of Service and Privacy Policy
+                    </label>
+                </div>
+
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+
+                <button type="submit" class="btn btn-primary btn-block">Register</button>
+            </form>
+
+            <div class="auth-footer">
+                Already have an account? <a href="login.html">Login here</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sync the top user type dropdown with the hidden form dropdown
+        document.addEventListener('DOMContentLoaded', function() {
+            const userTypeTop = document.getElementById('userTypeTop');
+            const userTypeForm = document.getElementById('userType');
+            
+            if (userTypeTop && userTypeForm) {
+                userTypeTop.addEventListener('change', function() {
+                    userTypeForm.value = this.value;
+                });
+            }
+        });
+        
+        function initAuthNav() {
+            const user = localStorage.getItem('user');
+            const authLinks = document.getElementById('authLinks');
+            const userLinks = document.getElementById('userLinks');
+            if (!authLinks || !userLinks) return;
+
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    authLinks.style.display = 'none';
+                    userLinks.style.display = 'flex';
+                    const greeting = document.getElementById('userGreeting');
+                    if (greeting) greeting.textContent = `Welcome, ${userData.full_name}!`;
+                    const dashboardLink = document.getElementById('dashboardLink');
+                    if (dashboardLink) {
+                        dashboardLink.href = userData.user_type === 'provider' ? 'provider-dashboard.html' : 'customer-dashboard.html';
+                    }
+                } catch (e) {
+                    console.error('Error parsing user data', e);
+                }
+            }
+        }
+
+        function handleLogout(event) {
+            event.preventDefault();
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', initAuthNav);
+    </script>
+    <script src="js/register.js"></script>
+    <script>
+        // Google Sign-In Handler for Registration - Must be in global scope
+        function handleGoogleRegister(response) {
+            const credential = response.credential;
+            console.log('Google register credential received');
+            
+            // Decode JWT token to get user info
+            const userInfo = parseJwt(credential);
+            console.log('Decoded user info:', userInfo);
+            
+            if (!userInfo) {
+                const errorMessage = document.getElementById('errorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = 'Failed to decode Google credentials';
+                    errorMessage.classList.add('show');
+                }
+                return;
+            }
+            
+            // Get user type from the TOP dropdown (the prominent one)
+            const userTypeTopSelect = document.getElementById('userTypeTop');
+            const selectedType = userTypeTopSelect.value;
+            
+            if (!selectedType) {
+                const errorMessage = document.getElementById('errorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = 'Please select whether you are registering as a Customer or Service Provider before signing in with Google';
+                    errorMessage.classList.add('show');
+                }
+                // Highlight the dropdown
+                userTypeTopSelect.style.borderColor = '#ef4444';
+                userTypeTopSelect.focus();
+                // Scroll to the dropdown
+                userTypeTopSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            
+            // Reset border color
+            userTypeTopSelect.style.borderColor = '';
+            
+            // Automatically check the terms checkbox for Google registration
+            const termsCheckbox = document.getElementById('terms');
+            if (termsCheckbox) {
+                termsCheckbox.checked = true;
+            }
+            
+            processGoogleRegistration(credential, userInfo, selectedType);
+        }
+
+        function processGoogleRegistration(credential, userInfo, selectedType) {
+            console.log('Sending registration to backend with type:', selectedType);
+            
+            // Send to backend for account creation
+            fetch('../backend/api/google-register.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    credential: credential,
+                    email: userInfo.email,
+                    name: userInfo.name,
+                    picture: userInfo.picture,
+                    userType: selectedType
+                })
+            })
+            .then(res => {
+                console.log('Backend response status:', res.status);
+                return res.json();
+            })
+            .then(data => {
+                console.log('Backend response:', data);
+                
+                if (data.success) {
+                    console.log('Storing user data...');
+                    // Store user data
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('token', data.token);
+                    
+                    console.log('Redirecting...');
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        if (data.user.user_type === 'provider') {
+                            window.location.href = 'provider-dashboard.html';
+                        } else {
+                            window.location.href = 'customer-dashboard.html';
+                        }
+                    }, 500);
+                } else {
+                    const errorMessage = document.getElementById('errorMessage');
+                    if (errorMessage) {
+                        errorMessage.textContent = data.error || data.message || 'Google Sign-In failed. Please try again.';
+                        errorMessage.classList.add('show');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Google registration error:', error);
+                const errorMessage = document.getElementById('errorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = 'An error occurred during Google Sign-In. Check browser console for details.';
+                    errorMessage.classList.add('show');
+                }
+            });
+        }
+
+        // Parse JWT token
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('Error parsing JWT:', e);
+                return null;
+            }
+        }
+    </script>
+</body>
+</html>
