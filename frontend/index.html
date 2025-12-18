@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeService - Professional Home Service Booking Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex !important;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 14px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            right: 1.5rem;
+            top: 1.5rem;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #1f2937;
+        }
+
+        .modal-content h2 {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
+        .modal-content p {
+            color: var(--text-light);
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .modal-features, .modal-pricing {
+            margin-bottom: 2rem;
+        }
+
+        .modal-features h3, .modal-pricing h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+
+        .modal-features ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .modal-features li {
+            padding: 0.5rem 0;
+            color: var(--text-light);
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .modal-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .modal-pricing p {
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+            font-weight: 700;
+        }
+
+        .service-card {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container navbar-main">
+            <a href="index.html" class="logo" style="text-decoration: none; color: inherit;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                HomeService
+            </a>
+            
+            <!-- Search Bar in Header -->
+            <div class="navbar-search">
+                <div class="search-wrapper-navbar">
+                    <svg class="search-icon-navbar" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="navServiceSearch" class="search-input-navbar" placeholder="Search services..." autocomplete="off">
+                    <div id="navSearchAutocomplete" class="search-autocomplete-navbar"></div>
+                </div>
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="#services">Services</a></li>
+                <li id="authLinks">
+                    <a href="login.html" class="nav-btn">Login</a>
+                    <a href="register.html" class="nav-btn nav-btn-primary">Sign Up</a>
+                </li>
+                <li id="userLinks" style="display: none;" class="user-nav-links">
+                    <span id="userGreeting" class="user-greeting"></span>
+                    <a href="#" id="dashboardLink" class="nav-btn nav-btn-primary">Dashboard</a>
+                    <a href="#" id="logoutLink" class="nav-btn nav-logout" onclick="handleLogout(event)">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-background"></div>
+        <div class="container hero-content">
+            <div class="hero-text">
+                <h1>Your Trusted Home Service Platform</h1>
+                <p>Connect with professional service providers for plumbing, electrical, carpentry, cleaning, and appliance repairs</p>
+                <div class="hero-buttons">
+                    <a href="#services" class="btn btn-primary btn-lg">Browse Services</a>
+                    <a href="register.html" class="btn btn-secondary btn-lg">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Services Section -->
+    <section class="services-preview" id="services">
+        <div class="container">
+            <div class="section-header">
+                <h2>Our Services</h2>
+                <p>Professional solutions for all your home maintenance needs</p>
+            </div>
+            <div class="service-cards">
+                <a href="service-plumbing.html" class="card service-card" style="text-decoration: none; color: inherit;">
+                    <div class="card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 10h4v4H4a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2Z" />
+                            <path d="M20 10h-4v4h4a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2Z" />
+                            <rect x="8" y="9" width="8" height="6" rx="1" />
+                            <path d="M10 9V6h4v3" />
+                            <path d="M9 12h6" />
+                        </svg>
+                    </div>
+                    <h3>Plumbing</h3>
+                    <p>Professional plumbing services including repairs, installations, and maintenance</p>
+                    <div class="service-features">
+                        <span>✓ Emergency Repairs</span>
+                        <span>✓ Installation</span>
+                    </div>
+                </a>
+                <a href="service-carpentry.html" class="card service-card" style="text-decoration: none; color: inherit;">
+                    <div class="card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m3 12 4-4 10 10-2 2L3 12Z" />
+                            <path d="M7 8 9 6l3 3-2 2" />
+                            <path d="m16 18 2-2 2 2-2 2-2-2Z" />
+                        </svg>
+                    </div>
+                    <h3>Carpentry</h3>
+                    <p>Expert carpentry and woodwork solutions for your home projects</p>
+                    <div class="service-features">
+                        <span>✓ Custom Work</span>
+                        <span>✓ Repairs</span>
+                    </div>
+                </a>
+                <a href="service-electrical.html" class="card service-card" style="text-decoration: none; color: inherit;">
+                    <div class="card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M7 2v4" />
+                            <path d="M11 2v4" />
+                            <rect x="5" y="6" width="8" height="6" rx="2" />
+                            <path d="M9 12v4" />
+                            <path d="M8 20h2" />
+                            <path d="M15 11l3-3-1 3h3l-3 3 1-3h-3Z" />
+                        </svg>
+                    </div>
+                    <h3>Electrical</h3>
+                    <p>Certified electrical services for installation, repairs, and upgrades</p>
+                    <div class="service-features">
+                        <span>✓ Licensed Pros</span>
+                        <span>✓ 24/7 Available</span>
+                    </div>
+                </a>
+                <a href="service-cleaning.html" class="card service-card" style="text-decoration: none; color: inherit;">
+                    <div class="card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10 4h5v4h-5z" />
+                            <path d="M10 8h4l2 3v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-9z" />
+                            <path d="M13 8V4" />
+                            <path d="M9 11h8" />
+                            <path d="M18 5h1" />
+                            <path d="M19 3v1" />
+                            <path d="M20 4v1" />
+                        </svg>
+                    </div>
+                    <h3>Cleaning</h3>
+                    <p>Professional cleaning services to maintain your home spotless</p>
+                    <div class="service-features">
+                        <span>✓ Regular Service</span>
+                        <span>✓ Deep Clean</span>
+                    </div>
+                </a>
+                <a href="service-painting.html" class="card service-card" style="text-decoration: none; color: inherit;">
+                    <div class="card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2a7 7 0 0 0-7 7c0 1.93 1.5 4 3 5 0 0 0 3 4 3 1.67 0 3-1.33 3-3 0-1.1-.9-2-2-2h-1" />
+                            <path d="M14 13c1.38 0 2.5-1.12 2.5-2.5S15.38 8 14 8c-.08 0-.16 0-.24.01" />
+                            <path d="M5 21c2-1 7-1 9 0" />
+                        </svg>
+                    </div>
+                    <h3>Painting</h3>
+                    <p>Interior and exterior painting with smooth finishes and clean edges</p>
+                    <div class="service-features">
+                        <span>✓ Interior</span>
+                        <span>✓ Exterior</span>
+                    </div>
+                </a>
+                <a href="service-appliance.html" class="card service-card" style="text-decoration: none; color: inherit;">
+                    <div class="card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="5" y="3" width="14" height="18" rx="2" />
+                            <circle cx="12" cy="13" r="4.5" />
+                            <circle cx="12" cy="13" r="2" />
+                            <path d="M8 7h2" />
+                            <path d="M13 7h3" />
+                        </svg>
+                    </div>
+                    <h3>Appliance</h3>
+                    <p>Reliable appliance repair and maintenance for all major brands</p>
+                    <div class="service-features">
+                        <span>✓ All Brands</span>
+                        <span>✓ Warranty</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Why Choose Us</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">✓</div>
+                    <h3>Verified Pros</h3>
+                    <p>All providers are vetted and verified</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⭐</div>
+                    <h3>Rated & Reviewed</h3>
+                    <p>Transparent customer ratings</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Secure & Safe</h3>
+                    <p>Encrypted information protection</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⏰</div>
+                    <h3>Easy Scheduling</h3>
+                    <p>Book at your convenience</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Get Started?</h2>
+            <p>Create an account and find the right professional for your needs</p>
+            <a href="register.html" class="btn btn-primary btn-lg">Get Started</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>HomeService</h4>
+                    <p>Professional home service booking platform</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li>Services</li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:info@homeservice.com">info@homeservice.com</a></li>
+                        <li><a href="tel:+1234567890">+1 (234) 567-890</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 HomeService. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Check authentication state on page load
+        function initializeNavigation() {
+            const user = localStorage.getItem('user');
+            const authLinks = document.getElementById('authLinks');
+            const userLinks = document.getElementById('userLinks');
+            
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    authLinks.style.display = 'none';
+                    userLinks.style.display = 'flex';
+                    document.getElementById('userGreeting').textContent = `Welcome, ${userData.full_name}!`;
+                    
+                    // Set dashboard link based on user type
+                    const dashboardLink = document.getElementById('dashboardLink');
+                    if (userData.user_type === 'provider') {
+                        dashboardLink.href = 'provider-dashboard.html';
+                    } else {
+                        dashboardLink.href = 'customer-dashboard.html';
+                    }
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                    // If parsing fails, show auth links
+                    authLinks.style.display = 'flex';
+                    userLinks.style.display = 'none';
+                }
+            } else {
+                // User not logged in, show auth links
+                authLinks.style.display = 'flex';
+                userLinks.style.display = 'none';
+            }
+        }
+
+        // Handle logout
+        function handleLogout(event) {
+            event.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                location.reload();
+            }
+        }
+
+        // Service modal functions
+        function openServiceModal(id, name, desc, features, price) {
+            const modal = document.getElementById('serviceModal');
+            document.getElementById('modalServiceName').textContent = name;
+            document.getElementById('modalServiceDesc').textContent = desc;
+            const featuresList = document.getElementById('modalServiceFeatures');
+            featuresList.innerHTML = '';
+            features.forEach(feature => {
+                const li = document.createElement('li');
+                li.textContent = feature;
+                featuresList.appendChild(li);
+            });
+            document.getElementById('modalServicePrice').textContent = price;
+            modal.classList.add('active');
+        }
+
+        function closeServiceModal() {
+            document.getElementById('serviceModal').classList.remove('active');
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('serviceModal');
+            if (event.target === modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        // Search autocomplete functionality (navbar version)
+        const services = [
+            {
+                name: 'Plumbing',
+                icon: '🚰',
+                description: 'Leak repair, faucet installation, drain cleaning',
+                url: 'service-plumbing.html',
+                keywords: ['plumber', 'leak', 'pipe', 'faucet', 'drain', 'toilet', 'water']
+            },
+            {
+                name: 'Carpentry',
+                icon: '🛠️',
+                description: 'Door repair, furniture assembly, custom woodwork',
+                url: 'service-carpentry.html',
+                keywords: ['carpenter', 'wood', 'door', 'furniture', 'cabinet', 'shelving']
+            },
+            {
+                name: 'Electrical',
+                icon: '⚡',
+                description: 'Wiring, socket installation, lighting upgrades',
+                url: 'service-electrical.html',
+                keywords: ['electrician', 'wiring', 'socket', 'light', 'power', 'switch']
+            },
+            {
+                name: 'Cleaning',
+                icon: '🧹',
+                description: 'Deep cleaning, move-in/out, kitchen & bathroom',
+                url: 'service-cleaning.html',
+                keywords: ['clean', 'maid', 'sanitize', 'housekeeping', 'deep clean']
+            },
+            {
+                name: 'Painting',
+                icon: '🎨',
+                description: 'Interior & exterior painting, wall preparation',
+                url: 'service-painting.html',
+                keywords: ['paint', 'painter', 'interior', 'exterior', 'wall', 'color']
+            },
+            {
+                name: 'Appliance Repair',
+                icon: '🔧',
+                description: 'Refrigerator, washing machine, AC repair',
+                url: 'service-appliance.html',
+                keywords: ['appliance', 'fridge', 'refrigerator', 'washing machine', 'ac', 'repair']
+            }
+        ];
+
+        function filterServices(query) {
+            if (!query) return [];
+            
+            query = query.toLowerCase();
+            return services.filter(service => {
+                return service.name.toLowerCase().includes(query) ||
+                       service.description.toLowerCase().includes(query) ||
+                       service.keywords.some(keyword => keyword.includes(query));
+            });
+        }
+
+        // Navbar search functionality
+        const navSearchInput = document.getElementById('navServiceSearch');
+        const navAutocompleteDiv = document.getElementById('navSearchAutocomplete');
+
+        function displayNavAutocomplete(results) {
+            if (results.length === 0) {
+                navAutocompleteDiv.innerHTML = '<div class="autocomplete-empty-navbar">No services found</div>';
+                navAutocompleteDiv.classList.add('active');
+                return;
+            }
+
+            navAutocompleteDiv.innerHTML = results.map(service => `
+                <div class="autocomplete-item-navbar" onclick="window.location.href='${service.url}'">
+                    <span class="autocomplete-icon-navbar">${service.icon}</span>
+                    <div>
+                        <div class="autocomplete-title-navbar">${service.name}</div>
+                        <div class="autocomplete-desc-navbar">${service.description}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            navAutocompleteDiv.classList.add('active');
+        }
+
+        navSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            if (query.length < 1) {
+                navAutocompleteDiv.classList.remove('active');
+                return;
+            }
+
+            const results = filterServices(query);
+            if (results.length > 0) {
+                displayNavAutocomplete(results);
+            } else {
+                navAutocompleteDiv.classList.remove('active');
+            }
+        });
+
+        navSearchInput.addEventListener('focus', (e) => {
+            const query = e.target.value.trim();
+            if (query.length > 0) {
+                const results = filterServices(query);
+                if (results.length > 0) {
+                    displayNavAutocomplete(results);
+                }
+            }
+        });
+
+        // Close autocomplete when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-wrapper-navbar')) {
+                navAutocompleteDiv.classList.remove('active');
+            }
+        });
+
+        // Handle Enter key
+        navSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = e.target.value.trim();
+                const results = filterServices(query);
+                if (results.length > 0) {
+                    window.location.href = results[0].url;
+                }
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeNavigation);
+    </script>
+</body>
+</html>

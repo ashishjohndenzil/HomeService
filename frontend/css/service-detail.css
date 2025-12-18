@@ -1,0 +1,380 @@
+/* Service Detail Pages Styling */
+
+/* Header Section */
+.service-detail-header {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #1e40af 100%);
+    color: white;
+    padding: 4rem 2rem;
+    margin-bottom: 3rem;
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.15);
+}
+
+.service-detail-header h1 {
+    font-size: 2.7rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.service-detail-header p {
+    font-size: 1.1rem;
+    opacity: 0.95;
+    line-height: 1.6;
+}
+
+/* Content Container */
+.service-detail-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Service Sections */
+.service-section {
+    margin-bottom: 3.5rem;
+}
+
+.service-section h2 {
+    font-size: 2rem;
+    color: var(--text-dark);
+    margin-bottom: 1.5rem;
+    border-bottom: 3px solid var(--secondary-color);
+    padding-bottom: 0.5rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.service-section > p {
+    font-size: 1.08rem;
+    line-height: 1.85;
+    color: var(--text-light);
+    margin-bottom: 1.25rem;
+}
+
+/* Service Grid */
+.service-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+/* Service Items */
+.service-item {
+    background: white;
+    padding: 1.75rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+}
+
+.service-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--secondary-color);
+}
+
+.service-item h3 {
+    color: var(--secondary-color);
+    margin-bottom: 0.75rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.service-item p {
+    color: var(--text-light);
+    font-size: 1.05rem;
+    line-height: 1.8;
+    margin: 0;
+}
+
+/* Highlighted Service Items */
+.service-item.highlighted {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-color: var(--secondary-color);
+}
+
+.service-item.highlighted h3 {
+    color: var(--secondary-color);
+}
+
+/* Call to Action Box */
+.cta-box {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+    padding: 2.5rem;
+    border-radius: 14px;
+    border-left: 5px solid var(--secondary-color);
+    margin: 2.5rem 0;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.1);
+}
+
+.cta-box h3 {
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.cta-box p {
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+    font-size: 1.08rem;
+    line-height: 1.7;
+}
+
+/* Pricing Box */
+.pricing-box {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    padding: 2.5rem;
+    border-radius: 16px;
+    border: 2px solid var(--secondary-color);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+}
+
+.pricing-box .price-highlight {
+    font-size: 1.4rem;
+    color: var(--secondary-color);
+    margin: 0;
+    font-weight: 700;
+}
+
+.pricing-box .price-label {
+    color: var(--text-light);
+    margin: 0.25rem 0 0 0;
+    font-size: 0.95rem;
+}
+
+.pricing-box .price-features {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+.pricing-box .price-features p {
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+    font-size: 0.98rem;
+}
+
+.pricing-box .price-features p:last-child {
+    margin-bottom: 0;
+}
+
+/* Back Button */
+.btn-back {
+    display: inline-block;
+    margin-bottom: 2rem;
+    padding: 0.7rem 1.5rem;
+    background: var(--light-bg);
+    color: var(--secondary-color);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.btn-back:hover {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+    transform: translateX(-3px);
+}
+
+/* Floating Book Now Button */
+.floating-book-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 999;
+    animation: floatIn 0.5s ease-out;
+}
+
+.floating-book-btn button {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.floating-book-btn button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(37, 99, 235, 0.4);
+}
+
+.floating-book-btn-icon {
+    font-size: 1.2rem;
+}
+
+@keyframes floatIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Icon Styles */
+.icon-large {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    display: inline-block;
+}
+
+.icon-xlarge {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    display: inline-block;
+}
+
+.icon-xxlarge {
+    font-size: 3rem;
+}
+
+/* Header Icon Section */
+.header-icon-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Utility Classes */
+.flex-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.price-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.header-title-wrapper {
+    margin: 0;
+}
+
+.header-subtitle {
+    margin: 0.5rem 0 0 0;
+    font-size: 1.1rem;
+    opacity: 0.95;
+}
+
+.section-description {
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+}
+
+/* Book Now Button Styling */
+.btn-book-now {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    padding: 0.9rem 2.1rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 12px 30px rgba(59, 130, 246, 0.22);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-book-now:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-book-now:active {
+    transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .service-detail-header {
+        padding: 3rem 1.5rem;
+    }
+
+    .service-detail-header h1 {
+        font-size: 2rem;
+    }
+
+    .service-detail-header p {
+        font-size: 1rem;
+    }
+
+    .service-section h2 {
+        font-size: 1.6rem;
+    }
+
+    .service-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .cta-box {
+        padding: 1.5rem;
+    }
+
+    .cta-box h3 {
+        font-size: 1.3rem;
+    }
+
+    .pricing-box {
+        padding: 1.5rem;
+    }
+
+    .floating-book-btn {
+        bottom: 1rem;
+        right: 1rem;
+    }
+
+    .floating-book-btn button {
+        padding: 0.8rem 1.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .service-detail-header h1 {
+        font-size: 1.6rem;
+    }
+
+    .service-section h2 {
+        font-size: 1.4rem;
+    }
+
+    .service-item {
+        padding: 1.25rem;
+    }
+
+    .service-item h3 {
+        font-size: 1.15rem;
+    }
+
+    .service-item p {
+        font-size: 0.95rem;
+    }
+
+    .header-icon-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

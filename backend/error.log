@@ -1,0 +1,32 @@
+[17-Dec-2025 06:24:55 Europe/Berlin] SMTP Response 1: 220 smtp.gmail.com ESMTP d9443c01a7336-2a142925c12sm35211125ad.13 - gsmtp
+[17-Dec-2025 06:24:55 Europe/Berlin] EHLO sent
+[17-Dec-2025 06:24:55 Europe/Berlin] STARTTLS: 220 2.0.0 Ready to start TLS
+[17-Dec-2025 06:24:57 Europe/Berlin] AUTH LOGIN: 334 VXNlcm5hbWU6
+[17-Dec-2025 06:24:57 Europe/Berlin] Username sent: 334 UGFzc3dvcmQ6
+[17-Dec-2025 06:24:57 Europe/Berlin] Password sent: 235 2.7.0 Accepted
+[17-Dec-2025 06:24:57 Europe/Berlin] Authentication successful!
+[17-Dec-2025 06:24:59 Europe/Berlin] Email sent response: 250 2.0.0 OK  1765949099 d9443c01a7336-2a142925c12sm35211125ad.13 - gsmtp
+[17-Dec-2025 06:24:59 Europe/Berlin] Email sent successfully to: ashishjohndenzil2028@mca.ajce.in
+[17-Dec-2025 06:25:18 Europe/Berlin] Token expiry: 2025-12-17 07:24:54 (timestamp: 1765952694), Current time: 2025-12-17 06:25:18 (timestamp: 1765949118)
+[17-Dec-2025 06:27:31 Europe/Berlin] SMTP Response 1: 220 smtp.gmail.com ESMTP d9443c01a7336-2a0e96df1c9sm83508945ad.39 - gsmtp
+[17-Dec-2025 06:27:31 Europe/Berlin] EHLO sent
+[17-Dec-2025 06:27:31 Europe/Berlin] STARTTLS: 220 2.0.0 Ready to start TLS
+[17-Dec-2025 06:27:32 Europe/Berlin] AUTH LOGIN: 334 VXNlcm5hbWU6
+[17-Dec-2025 06:27:33 Europe/Berlin] Username sent: 334 UGFzc3dvcmQ6
+[17-Dec-2025 06:27:33 Europe/Berlin] Password sent: 235 2.7.0 Accepted
+[17-Dec-2025 06:27:33 Europe/Berlin] Authentication successful!
+[17-Dec-2025 06:27:35 Europe/Berlin] Email sent response: 250 2.0.0 OK  1765949254 d9443c01a7336-2a0e96df1c9sm83508945ad.39 - gsmtp
+[17-Dec-2025 06:27:35 Europe/Berlin] Email sent successfully to: ashishjohndenzil2028@mca.ajce.in
+[17-Dec-2025 07:40:42 Europe/Berlin] SMTP Response 1: 220 smtp.gmail.com ESMTP d2e1a72fcca58-7fcbb11ed19sm1541611b3a.37 - gsmtp
+[17-Dec-2025 07:40:42 Europe/Berlin] EHLO sent
+[17-Dec-2025 07:40:42 Europe/Berlin] STARTTLS: 220 2.0.0 Ready to start TLS
+[17-Dec-2025 07:40:43 Europe/Berlin] AUTH LOGIN: 334 VXNlcm5hbWU6
+[17-Dec-2025 07:40:44 Europe/Berlin] Username sent: 334 UGFzc3dvcmQ6
+[17-Dec-2025 07:40:44 Europe/Berlin] Password sent: 235 2.7.0 Accepted
+[17-Dec-2025 07:40:44 Europe/Berlin] Authentication successful!
+[17-Dec-2025 07:40:46 Europe/Berlin] Email sent response: 250 2.0.0 OK  1765953645 d2e1a72fcca58-7fcbb11ed19sm1541611b3a.37 - gsmtp
+[17-Dec-2025 07:40:46 Europe/Berlin] Email sent successfully to: ashishjohndenzil2028@mca.ajce.in
+[17-Dec-2025 07:40:58 Europe/Berlin] Token not found in database: 311bdadf3c2d7f000f815fd854f8e68ba5e1ab82798a94353feacbc8bd4b421c
+[17-Dec-2025 07:41:05 Europe/Berlin] Token not found in database: 7dcca481ba7b9886acd290fe5b3902a6eabcfc01496864395c0a4ee995c968a1
+[17-Dec-2025 07:41:15 Europe/Berlin] Token expiry: 2025-12-17 08:40:41 (timestamp: 1765957241), Current time: 2025-12-17 07:41:15 (timestamp: 1765953675)
+[17-Dec-2025 07:41:33 Europe/Berlin] Password reset successfully for user: ashishjohndenzil2028@mca.ajce.in
