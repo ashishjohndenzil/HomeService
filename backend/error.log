@@ -30,3 +30,24 @@
 [17-Dec-2025 07:41:05 Europe/Berlin] Token not found in database: 7dcca481ba7b9886acd290fe5b3902a6eabcfc01496864395c0a4ee995c968a1
 [17-Dec-2025 07:41:15 Europe/Berlin] Token expiry: 2025-12-17 08:40:41 (timestamp: 1765957241), Current time: 2025-12-17 07:41:15 (timestamp: 1765953675)
 [17-Dec-2025 07:41:33 Europe/Berlin] Password reset successfully for user: ashishjohndenzil2028@mca.ajce.in
+[23-Dec-2025 04:46:10 Europe/Berlin] SMTP Response 1: 220 smtp.gmail.com ESMTP d2e1a72fcca58-7ff7e48e1d6sm9359212b3a.53 - gsmtp
+[23-Dec-2025 04:46:11 Europe/Berlin] EHLO sent
+[23-Dec-2025 04:46:11 Europe/Berlin] STARTTLS: 220 2.0.0 Ready to start TLS
+[23-Dec-2025 04:46:12 Europe/Berlin] AUTH LOGIN: 334 VXNlcm5hbWU6
+[23-Dec-2025 04:46:13 Europe/Berlin] Username sent: 334 UGFzc3dvcmQ6
+[23-Dec-2025 04:46:13 Europe/Berlin] Password sent: 235 2.7.0 Accepted
+[23-Dec-2025 04:46:13 Europe/Berlin] Authentication successful!
+[23-Dec-2025 04:46:15 Europe/Berlin] Email sent response: 250 2.0.0 OK  1766461576 d2e1a72fcca58-7ff7e48e1d6sm9359212b3a.53 - gsmtp
+[23-Dec-2025 04:46:15 Europe/Berlin] Email sent successfully to: ashishjohndenzil2028@mca.ajce.in
+[23-Dec-2025 04:46:22 Europe/Berlin] Token expiry: 2025-12-23 05:46:09 (timestamp: 1766465169), Current time: 2025-12-23 04:46:22 (timestamp: 1766461582)
+[23-Dec-2025 06:12:26 Europe/Berlin] SMTP Response 1: 220 smtp.gmail.com ESMTP d2e1a72fcca58-7ff7a939ea2sm12073471b3a.4 - gsmtp
+[23-Dec-2025 06:12:26 Europe/Berlin] EHLO sent
+[23-Dec-2025 06:12:27 Europe/Berlin] STARTTLS: 220 2.0.0 Ready to start TLS
+[23-Dec-2025 06:12:28 Europe/Berlin] AUTH LOGIN: 334 VXNlcm5hbWU6
+[23-Dec-2025 06:12:28 Europe/Berlin] Username sent: 334 UGFzc3dvcmQ6
+[23-Dec-2025 06:12:28 Europe/Berlin] Password sent: 235 2.7.0 Accepted
+[23-Dec-2025 06:12:28 Europe/Berlin] Authentication successful!
+[23-Dec-2025 06:12:30 Europe/Berlin] Email sent response: 250 2.0.0 OK  1766466751 d2e1a72fcca58-7ff7a939ea2sm12073471b3a.4 - gsmtp
+[23-Dec-2025 06:12:30 Europe/Berlin] Email sent successfully to: ashishyt100@gmail.com
+[23-Dec-2025 06:12:44 Europe/Berlin] Token expiry: 2025-12-23 07:12:24 (timestamp: 1766470344), Current time: 2025-12-23 06:12:44 (timestamp: 1766466764)
+[23-Dec-2025 06:12:55 Europe/Berlin] Password reset successfully for user: ashishyt100@gmail.com

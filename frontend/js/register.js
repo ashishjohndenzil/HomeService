@@ -1,7 +1,215 @@
+// Validation functions - Declare outside DOMContentLoaded so they're available
+function createSuggestionElement(field) {
+    let suggestion = field.parentElement.querySelector('.validation-suggestion');
+    if (!suggestion) {
+        suggestion = document.createElement('small');
+        suggestion.className = 'validation-suggestion';
+        field.parentElement.appendChild(suggestion);
+    }
+    return suggestion;
+}
+
+function validateFullName(field) {
+    const suggestion = createSuggestionElement(field);
+    const fullName = field.value.trim();
+    
+    if (!fullName) {
+        suggestion.textContent = 'Full name is required';
+        suggestion.className = 'validation-suggestion error-suggestion';
+        field.style.borderColor = '#ef4444';
+        return false;
+    }
+    
+    if (fullName.length < 3) {
+        suggestion.textContent = 'Name should be at least 3 characters long';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+    
+    if (!/^[a-zA-Z\s'-]+$/.test(fullName)) {
+        suggestion.textContent = 'Name should only contain letters, spaces, hyphens, and apostrophes';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+    
+    suggestion.textContent = '✓ Name looks good';
+    suggestion.className = 'validation-suggestion success-suggestion';
+    field.style.borderColor = '#10b981';
+    return true;
+}
+
+function validateEmail(field) {
+    const suggestion = createSuggestionElement(field);
+    const email = field.value.trim();
+    
+    if (!email) {
+        suggestion.textContent = 'Email is required';
+        suggestion.className = 'validation-suggestion error-suggestion';
+        field.style.borderColor = '#ef4444';
+        return false;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        suggestion.textContent = 'Please enter a valid email format (e.g., user@example.com)';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+    
+    suggestion.textContent = '✓ Email looks good';
+    suggestion.className = 'validation-suggestion success-suggestion';
+    field.style.borderColor = '#10b981';
+    return true;
+}
+
+function validatePhone(field) {
+    console.log('validatePhone called with value:', field.value);
+    
+    const suggestion = createSuggestionElement(field);
+    const phone = field.value; // Don't trim here - let user type naturally
+    
+    console.log('Phone value (no trim):', phone);
+    
+    if (!phone || phone.length === 0) {
+        suggestion.textContent = 'Phone number is required';
+        suggestion.className = 'validation-suggestion error-suggestion';
+        field.style.borderColor = '#ef4444';
+        console.log('Empty phone field');
+        return false;
+    }
+    
+    const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+    if (!phoneRegex.test(phone)) {
+        suggestion.textContent = '⚠ Phone should only contain numbers, spaces, hyphens, plus, and parentheses';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        console.log('Invalid phone format:', phone);
+        return false;
+    }
+    
+    // Count only digits for length check
+    const digitCount = phone.replace(/\D/g, '').length;
+    
+    console.log('Digit count:', digitCount);
+    
+    if (digitCount < 10) {
+        suggestion.textContent = `Phone number needs ${10 - digitCount} more digit(s)`;
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+    
+    suggestion.textContent = '✓ Phone number looks good';
+    suggestion.className = 'validation-suggestion success-suggestion';
+    field.style.borderColor = '#10b981';
+    return true;
+}
+
+function validatePassword(field) {
+    const suggestion = createSuggestionElement(field);
+    const password = field.value;
+    
+    if (!password) {
+        suggestion.textContent = 'Password is required';
+        suggestion.className = 'validation-suggestion error-suggestion';
+        field.style.borderColor = '#ef4444';
+        return false;
+    }
+    
+    if (password.length < 6) {
+        suggestion.textContent = 'Password must be at least 6 characters long';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+    
+    if (password.length < 8) {
+        suggestion.textContent = 'Consider using 8+ characters for better security';
+        suggestion.className = 'validation-suggestion info-suggestion';
+        field.style.borderColor = '#3b82f6';
+        return true;
+    }
+    
+    suggestion.textContent = '✓ Password is strong';
+    suggestion.className = 'validation-suggestion success-suggestion';
+    field.style.borderColor = '#10b981';
+    return true;
+}
+
+function validateConfirmPassword(field) {
+    const suggestion = createSuggestionElement(field);
+    const confirmPassword = field.value;
+    const password = document.getElementById('password').value;
+    
+    if (!confirmPassword) {
+        suggestion.textContent = 'Please confirm your password';
+        suggestion.className = 'validation-suggestion error-suggestion';
+        field.style.borderColor = '#ef4444';
+        return false;
+    }
+    
+    if (password && confirmPassword !== password) {
+        suggestion.textContent = 'Passwords do not match';
+        suggestion.className = 'validation-suggestion error-suggestion';
+        field.style.borderColor = '#ef4444';
+        return false;
+    }
+    
+    if (confirmPassword === password && password) {
+        suggestion.textContent = '✓ Passwords match';
+        suggestion.className = 'validation-suggestion success-suggestion';
+        field.style.borderColor = '#10b981';
+        return true;
+    }
+    
+    suggestion.textContent = '';
+    field.style.borderColor = '';
+    return false;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const registerForm = document.getElementById('registerForm');
     const errorMessage = document.getElementById('errorMessage');
     const successMessage = document.getElementById('successMessage');
+    
+    // Setup inline validation for all form fields
+    const fullNameInput = document.getElementById('fullName');
+    if (fullNameInput) {
+        fullNameInput.addEventListener('input', function() { validateFullName(this); });
+        fullNameInput.addEventListener('blur', function() { validateFullName(this); });
+    }
+    
+    const emailInput = document.getElementById('email');
+    if (emailInput) {
+        emailInput.addEventListener('input', function() { validateEmail(this); });
+        emailInput.addEventListener('blur', function() { validateEmail(this); });
+    }
+    
+    const phoneInput = document.getElementById('phone');
+    if (phoneInput) {
+        // Prevent non-numeric characters from being typed
+        phoneInput.addEventListener('input', function(e) { 
+            // Only allow digits, spaces, hyphens, plus, and parentheses
+            this.value = this.value.replace(/[^0-9\s\-\+\(\)]/g, '');
+            validatePhone(this); 
+        });
+        phoneInput.addEventListener('blur', function() { validatePhone(this); });
+    }
+    
+    const passwordInput = document.getElementById('password');
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() { validatePassword(this); });
+        passwordInput.addEventListener('blur', function() { validatePassword(this); });
+    }
+    
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    if (confirmPasswordInput) {
+        confirmPasswordInput.addEventListener('input', function() { validateConfirmPassword(this); });
+        confirmPasswordInput.addEventListener('blur', function() { validateConfirmPassword(this); });
+    }
 
     registerForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -119,19 +327,5 @@ document.addEventListener('DOMContentLoaded', function() {
     function showSuccess(message) {
         successMessage.textContent = message;
         successMessage.classList.add('show');
-        // Scroll to success message
-        successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-
-    // Real-time password match validation
-    const password = document.getElementById('password');
-    const confirmPassword = document.getElementById('confirmPassword');
-
-    confirmPassword.addEventListener('input', function() {
-        if (this.value && password.value !== this.value) {
-            this.style.borderColor = '#c33';
-        } else {
-            this.style.borderColor = '#e0e0e0';
-        }
-    });
 });

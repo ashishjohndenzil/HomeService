@@ -2,6 +2,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
     const errorMessage = document.getElementById('errorMessage');
     const successMessage = document.getElementById('successMessage');
+    
+    // Setup inline validation for email field
+    const emailInput = document.getElementById('email');
+    if (emailInput) {
+        emailInput.addEventListener('input', function() {
+            validateEmailField(this);
+        });
+        emailInput.addEventListener('blur', function() {
+            validateEmailField(this);
+        });
+    }
+    
+    // Setup inline validation for password field
+    const passwordInput = document.getElementById('password');
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            validatePasswordField(this);
+        });
+        passwordInput.addEventListener('blur', function() {
+            validatePasswordField(this);
+        });
+    }
 
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -93,6 +115,62 @@ document.addEventListener('DOMContentLoaded', function() {
         errorMessage.classList.add('show');
         // Scroll to error message
         errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function validateEmailField(field) {
+        let suggestion = field.parentElement.querySelector('.validation-suggestion');
+        
+        if (!suggestion) {
+            suggestion = document.createElement('small');
+            suggestion.className = 'validation-suggestion';
+            field.parentElement.appendChild(suggestion);
+        }
+        
+        const email = field.value.trim();
+        
+        if (!email) {
+            suggestion.textContent = 'Email is required';
+            suggestion.className = 'validation-suggestion error-suggestion';
+            field.style.borderColor = '#ef4444';
+            return false;
+        }
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            suggestion.textContent = 'Please enter a valid email format (e.g., user@example.com)';
+            suggestion.className = 'validation-suggestion warning-suggestion';
+            field.style.borderColor = '#f59e0b';
+            return false;
+        }
+        
+        suggestion.textContent = '✓ Email looks good';
+        suggestion.className = 'validation-suggestion success-suggestion';
+        field.style.borderColor = '#10b981';
+        return true;
+    }
+    
+    function validatePasswordField(field) {
+        let suggestion = field.parentElement.querySelector('.validation-suggestion');
+        
+        if (!suggestion) {
+            suggestion = document.createElement('small');
+            suggestion.className = 'validation-suggestion';
+            field.parentElement.appendChild(suggestion);
+        }
+        
+        const password = field.value;
+        
+        if (!password) {
+            suggestion.textContent = 'Password is required';
+            suggestion.className = 'validation-suggestion error-suggestion';
+            field.style.borderColor = '#ef4444';
+            return false;
+        }
+        
+        suggestion.textContent = '✓ Password entered';
+        suggestion.className = 'validation-suggestion success-suggestion';
+        field.style.borderColor = '#10b981';
+        return true;
     }
 
     function showSuccess(message) {
