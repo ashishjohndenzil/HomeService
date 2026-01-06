@@ -77,9 +77,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // If provider, create provider record with selected service
             if ($userType === 'provider' && $serviceId) {
                 try {
-                    $providerStmt = $pdo->prepare("INSERT INTO providers (user_id, service_id, created_at) 
-                                                   VALUES (?, ?, NOW())");
-                    $providerStmt->execute([$userId, $serviceId]);
+                    $providerStmt = $pdo->prepare("INSERT INTO providers (user_id, service_id, hourly_rate, experience_years, is_verified, created_at) 
+                                                   VALUES (?, ?, ?, 0, 0, NOW())");
+                    
+                    // Default rates based on service ID
+                    $defaultRates = [
+                        1 => 500.00, // Plumbing
+                        2 => 600.00, // Electrical
+                        3 => 400.00, // Cleaning
+                        4 => 550.00, // Carpentry
+                        5 => 450.00, // Painting
+                        6 => 350.00  // Repairs
+                    ];
+                    
+                    $hourlyRate = isset($defaultRates[$serviceId]) ? $defaultRates[$serviceId] : 500.00;
+                    
+                    $providerStmt->execute([$userId, $serviceId, $hourlyRate]);
                     
                     // Fetch the complete user data with service info
                     $userQuery = $pdo->prepare("

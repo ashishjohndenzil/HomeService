@@ -266,14 +266,30 @@ function loadProviderServices() {
                         <p><strong>Rating:</strong> ${ratingStars} (${service.total_reviews || 0} reviews)</p>
                     </div>
                     <div class="service-card-actions">
-                        <button class="btn btn-sm btn-secondary" type="button" onclick="editService(${service.id})">Edit</button>
+                        <button class="btn btn-sm btn-secondary" type="button" onclick="editService(${service.id}, ${service.hourly_rate}, ${service.experience_years}, '${service.service_name}')">Edit</button>
                         <button class="btn btn-sm btn-danger" type="button" onclick="deleteService(${service.id})">Delete</button>
                     </div>
                 `;
                     servicesContent.appendChild(serviceCard);
                 });
+
+                // Calculate and update average rating
+                const totalRating = data.services.reduce((acc, curr) => acc + (parseFloat(curr.rating) || 0), 0);
+                const avgRating = data.services.length ? (totalRating / data.services.length).toFixed(1) : '0.0';
+
+                const ratingElement = document.getElementById('rating');
+                if (ratingElement) {
+                    ratingElement.textContent = avgRating;
+                }
+
             } else {
                 servicesContent.innerHTML = '<p class="empty-state">No services added yet. <a href="#" onclick="showAddServiceModal()">Add your first service</a></p>';
+
+                // Reset rating if no services
+                const ratingElement = document.getElementById('rating');
+                if (ratingElement) {
+                    ratingElement.textContent = '0.0';
+                }
             }
         })
         .catch(error => {
@@ -549,6 +565,8 @@ function loadDashboardData() {
         if (completedElement) completedElement.textContent = '0';
         if (ratingElement) ratingElement.textContent = '4.8';
         if (earningsElement) earningsElement.textContent = '₹0';
+        // Rating will be updated by loadProviderServices
+        if (ratingElement) ratingElement.textContent = '...';
     }
 }
 
@@ -637,8 +655,58 @@ function showAddServiceModal() {
     alert('Add Service feature coming soon!');
 }
 
-function editService(serviceId) {
-    alert('Edit Service feature coming soon!');
+function editService(serviceId, currentRate, currentExp, serviceName) {
+    const newRate = prompt(`Update Hourly Rate for ${serviceName} (₹):`, currentRate);
+    if (newRate === null) return; // Cancelled
+
+    if (isNaN(newRate) || newRate <= 0) {
+        alert("Please enter a valid positive number for the rate.");
+        return;
+    }
+
+    const newExp = prompt(`Update Experience (Years) for ${serviceName}:`, currentExp);
+    if (newExp === null) return; // Cancelled
+
+    if (isNaN(newExp) || newExp < 0) {
+        alert("Please enter a valid number for experience.");
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Please login again.");
+        return;
+    }
+
+    showLoadingState(true);
+
+    fetch('../backend/api/update-service.php', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            service_id: serviceId,
+            hourly_rate: parseFloat(newRate),
+            experience_years: parseInt(newExp)
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            showLoadingState(false);
+            if (data.success) {
+                showNotification('Service updated successfully', 'success');
+                loadProviderServices(); // Refresh list to show new values
+            } else {
+                showNotification(data.message || 'Failed to update service', 'error');
+            }
+        })
+        .catch(error => {
+            showLoadingState(false);
+            console.error('Error updating service:', error);
+            showNotification('An error occurred. Please try again.', 'error');
+        });
 }
 
 function deleteService(serviceId) {
