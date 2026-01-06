@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Provider Dashboard - HomeService</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/style.css?v=2">
+    <link rel="stylesheet" href="css/dashboard.css?v=2">
 </head>
+
 <body>
     <nav class="navbar">
         <div class="container">
@@ -58,8 +60,15 @@
                     <h1>Provider Dashboard</h1>
                     <p>Manage your services and bookings</p>
                 </div>
-                
+
                 <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">🏷️</div>
+                        <div class="stat-content">
+                            <h3 id="serviceCategory">--</h3>
+                            <p>Service Category</p>
+                        </div>
+                    </div>
                     <div class="stat-card">
                         <div class="stat-icon">📋</div>
                         <div class="stat-content">
@@ -84,7 +93,7 @@
                     <div class="stat-card">
                         <div class="stat-icon">💰</div>
                         <div class="stat-content">
-                            <h3 id="earnings">$0</h3>
+                            <h3 id="earnings">₹0</h3>
                             <p>Total Earnings</p>
                         </div>
                     </div>
@@ -94,7 +103,8 @@
                     <h2>Quick Actions</h2>
                     <div class="action-buttons">
                         <a href="#bookings" class="btn btn-primary" onclick="switchPage('bookings')">View Requests</a>
-                        <a href="#services" class="btn btn-secondary" onclick="switchPage('services')">Manage Services</a>
+                        <a href="#services" class="btn btn-secondary" onclick="switchPage('services')">Manage
+                            Services</a>
                     </div>
                 </div>
             </div>
@@ -104,8 +114,15 @@
                 <div class="page-header">
                     <h1>Service Requests</h1>
                 </div>
+                <div class="bookings-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="pending">Pending</button>
+                    <button class="filter-btn" data-filter="confirmed">Confirmed</button>
+                    <button class="filter-btn" data-filter="completed">Completed</button>
+                    <button class="filter-btn" data-filter="cancelled">Cancelled</button>
+                </div>
                 <div id="bookingsContent" class="bookings-list">
-                    <p class="empty-state">No service requests yet</p>
+                    <p class="empty-state">Loading service requests...</p>
                 </div>
             </div>
 
@@ -113,10 +130,10 @@
             <div id="services" class="page">
                 <div class="page-header">
                     <h1>My Services</h1>
-                    <a href="#" class="btn btn-primary btn-sm">+ Add Service</a>
+                    <a href="#" class="btn btn-primary btn-sm" onclick="showAddServiceModal()">+ Add Service</a>
                 </div>
-                <div class="services-list">
-                    <p class="empty-state">No services added yet</p>
+                <div id="servicesContent" class="services-list">
+                    <p class="empty-state">Loading your services...</p>
                 </div>
             </div>
 
@@ -128,11 +145,11 @@
                 <div class="earnings-container">
                     <div class="earnings-card">
                         <h3>This Month</h3>
-                        <p class="amount">$0</p>
+                        <p class="amount">₹0</p>
                     </div>
                     <div class="earnings-card">
                         <h3>Total Earnings</h3>
-                        <p class="amount">$0</p>
+                        <p class="amount">₹0</p>
                     </div>
                 </div>
                 <div id="earningsContent" class="earnings-list">
@@ -164,6 +181,8 @@
         </main>
     </div>
 
-    <script src="js/dashboard.js"></script>
+    <script src="js/booking.js?v=6"></script>
+    <script src="js/dashboard.js?v=6"></script>
 </body>
+
 </html>

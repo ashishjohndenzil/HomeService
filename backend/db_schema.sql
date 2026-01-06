@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 -- Services Table
 CREATE TABLE IF NOT EXISTS services (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    category VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     icon VARCHAR(255),
@@ -98,10 +99,11 @@ CREATE TABLE IF NOT EXISTS reviews (
 );
 
 -- Insert default services
-INSERT INTO services (name, description) VALUES
-('Plumbing', 'Professional plumbing services'),
-('Electrical', 'Expert electrical installation and repairs'),
-('Cleaning', 'Professional cleaning services'),
-('Carpentry', 'Quality carpentry and woodwork'),
-('Painting', 'Interior and exterior painting'),
-('Repairs', 'General home repairs');
+INSERT INTO services (category, name, description) VALUES
+('Plumbing', 'Plumbing', 'Professional plumbing services'),
+('Electrical', 'Electrical', 'Expert electrical installation and repairs'),
+('Cleaning', 'Cleaning', 'Professional cleaning services'),
+('Carpentry', 'Carpentry', 'Quality carpentry and woodwork'),
+('Painting', 'Painting', 'Interior and exterior painting'),
+('Appliance Repair', 'Appliance Repair', 'General appliance repair services'),
+('Other', 'Other', 'General home repairs');

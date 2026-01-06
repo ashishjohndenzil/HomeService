@@ -11,7 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    $data = json_decode(file_get_contents('php://input'), true);
+    $input = file_get_contents('php://input');
+    error_log("Google Register Input: " . $input);
+    $data = json_decode($input, true);
     
     if (!isset($data['email']) || !isset($data['name']) || !isset($data['userType'])) {
         handleError('Missing required fields');
@@ -21,6 +23,12 @@ try {
     $name = htmlspecialchars($data['name']);
     $userType = in_array($data['userType'], ['customer', 'provider']) ? $data['userType'] : 'customer';
     $picture = isset($data['picture']) ? $data['picture'] : null;
+    $serviceId = isset($data['serviceId']) ? intval($data['serviceId']) : null;
+    
+    // For providers, validate service selection
+    if ($userType === 'provider' && empty($serviceId)) {
+        handleError('Service selection is required for providers');
+    }
     
     // Check if user already exists
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
@@ -44,7 +52,29 @@ try {
     }
     
     $userId = $pdo->lastInsertId();
+    
+    // If provider, create provider record with selected service
+    if ($userType === 'provider' && $serviceId) {
+        try {
+            $providerStmt = $pdo->prepare("INSERT INTO providers (user_id, service_id, created_at) 
+                                           VALUES (?, ?, NOW())");
+            $providerStmt->execute([$userId, $serviceId]);
+        } catch (PDOException $e) {
+            error_log("Provider record creation failed: " . $e->getMessage());
+            handleError('Failed to create provider profile');
+        }
+    }
+    
     $token = bin2hex(random_bytes(32));
+    
+    // Get the service category if provider
+    $category = null;
+    if ($userType === 'provider' && $serviceId) {
+        $serviceStmt = $pdo->prepare("SELECT category FROM services WHERE id = ?");
+        $serviceStmt->execute([$serviceId]);
+        $service = $serviceStmt->fetch();
+        $category = $service ? $service['category'] : null;
+    }
     
     sendResponse([
         'success' => true,
@@ -54,7 +84,8 @@ try {
             'full_name' => $name,
             'email' => $email,
             'user_type' => $userType,
-            'profile_picture' => $picture
+            'profile_picture' => $picture,
+            'category' => $category
         ],
         'token' => $token
     ]);

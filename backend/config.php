@@ -175,4 +175,3 @@ function sendEmailViaGmailDirect($to, $toName, $subject, $message, $resetLink) {
 function sendPasswordResetEmail($to, $toName, $subject, $message, $resetLink): bool {
     return sendEmailViaGmailDirect($to, $toName, $subject, $message, $resetLink);
 }
-?>

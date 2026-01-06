@@ -63,12 +63,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $response['success'] = true;
             $response['message'] = 'Login successful';
             $response['token'] = $token;
+            
+            // Fetch category if provider
+            $category = null;
+            if ($user['user_type'] === 'provider') {
+                $catStmt = $pdo->prepare("SELECT s.category FROM providers p JOIN services s ON p.service_id = s.id WHERE p.user_id = ?");
+                $catStmt->execute([$user['id']]);
+                if ($catRow = $catStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $category = $catRow['category'];
+                }
+            }
+            
             $response['user'] = [
                 'id' => $user['id'],
                 'full_name' => $user['full_name'],
                 'email' => $user['email'],
                 'phone' => $user['phone'],
-                'user_type' => $user['user_type']
+                'user_type' => $user['user_type'],
+                'category' => $category
             ];
         } else {
             $response['success'] = false;

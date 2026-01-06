@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - HomeService</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/auth.css">
-    <meta name="google-signin-client_id" content="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com">
+    <meta name="google-signin-client_id"
+        content="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
+
 <body>
     <nav class="navbar">
         <div class="container">
@@ -38,39 +41,55 @@
         <div class="auth-box">
             <h2>Create Your Account</h2>
             <p class="auth-subtitle">Join HomeService to connect with trusted professionals</p>
-            
+
             <!-- User Type Selection (Required First) -->
             <div class="form-group" style="margin-bottom: 20px;">
-                <label for="userTypeTop" style="font-weight: 600; margin-bottom: 8px; display: block;">I want to register as: <span style="color: #ef4444;">*</span></label>
-                <select id="userTypeTop" name="userTypeTop" required style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 16px;">
+                <label for="userTypeTop" style="font-weight: 600; margin-bottom: 8px; display: block;">I want to
+                    register as: <span style="color: #ef4444;">*</span></label>
+                <select id="userTypeTop" name="userTypeTop" required
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 16px;">
                     <option value="">-- Select Your Role --</option>
                     <option value="customer">Customer (I need services)</option>
                     <option value="provider">Service Provider (I offer services)</option>
                 </select>
-                <small style="color: #666; display: block; margin-top: 5px;">Please select your role before proceeding</small>
+                <small style="color: #666; display: block; margin-top: 5px;">Please select your role before
+                    proceeding</small>
             </div>
-            
+
+            <!-- Service Selection for Providers (Dynamic) -->
+            <div class="form-group" id="serviceSelectionGroup"
+                style="display: none; margin-bottom: 20px; animation: fadeIn 0.3s ease;">
+                <label for="serviceId" style="font-weight: 600; margin-bottom: 8px; display: block;">Select Your Service
+                    Category <span style="color: #ef4444;">*</span></label>
+                <select id="serviceId" name="serviceId" required
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 16px;">
+                    <option value="">-- Select a service category --</option>
+                    <option value="1">Plumbing</option>
+                    <option value="2">Electrical</option>
+                    <option value="3">Cleaning</option>
+                    <option value="4">Carpentry</option>
+                    <option value="5">Painting</option>
+                    <option value="6">Other</option>
+                </select>
+                <small style="color: #666; display: block; margin-top: 5px;">Choose the service category you specialize
+                    in</small>
+            </div>
+
             <!-- Google Sign-In Button -->
             <div id="g_id_onload"
-                 data-client_id="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com"
-                 data-callback="handleGoogleRegister">
+                data-client_id="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com"
+                data-callback="handleGoogleRegister">
             </div>
             <div class="google-btn-wrapper">
-                <div class="g_id_signin"
-                     data-type="standard"
-                     data-size="large"
-                     data-theme="outline"
-                     data-text="signup_with"
-                     data-shape="rectangular"
-                     data-logo_alignment="left"
-                     data-width="350">
+                <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline"
+                    data-text="signup_with" data-shape="rectangular" data-logo_alignment="left" data-width="350">
                 </div>
             </div>
-            
+
             <div class="auth-divider">
                 <span>OR</span>
             </div>
-            
+
             <form id="registerForm" class="auth-form">
                 <div class="form-group">
                     <label for="fullName">Full Name</label>
@@ -97,6 +116,8 @@
                     <label for="confirmPassword">Confirm Password</label>
                     <input type="password" id="confirmPassword" name="confirmPassword" required>
                 </div>
+
+                <!-- Service Selection moved to top logic -->
 
                 <div class="form-group" style="display: none;">
                     <label for="userType">Register As</label>
@@ -127,18 +148,57 @@
     </div>
 
     <script>
-        // Sync the top user type dropdown with the hidden form dropdown
-        document.addEventListener('DOMContentLoaded', function() {
+        // Sync the top user type dropdown and handle service selection
+        document.addEventListener('DOMContentLoaded', function () {
             const userTypeTop = document.getElementById('userTypeTop');
             const userTypeForm = document.getElementById('userType');
-            
-            if (userTypeTop && userTypeForm) {
-                userTypeTop.addEventListener('change', function() {
+            const serviceSelectionGroup = document.getElementById('serviceSelectionGroup');
+
+            if (userTypeTop && userTypeForm && serviceSelectionGroup) {
+                userTypeTop.addEventListener('change', function () {
                     userTypeForm.value = this.value;
+                    if (this.value === 'provider') {
+                        serviceSelectionGroup.style.display = 'block';
+                        loadServices();
+                    } else {
+                        serviceSelectionGroup.style.display = 'none';
+                    }
                 });
             }
         });
-        
+
+        function loadServices() {
+            const serviceSelect = document.getElementById('serviceId');
+            if (!serviceSelect) {
+                console.error('serviceId select element not found');
+                return;
+            }
+
+            fetch('../backend/api/services.php')
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to fetch services');
+                    return res.json();
+                })
+                .then(data => {
+                    const services = data.services || data.data || [];
+                    if (services.length > 0) {
+                        // Only update if API returns services
+                        serviceSelect.innerHTML = '<option value="">-- Select a service category --</option>';
+                        services.forEach(service => {
+                            const opt = document.createElement('option');
+                            opt.value = service.id;
+                            opt.textContent = `${service.category || service.name}`;
+                            serviceSelect.appendChild(opt);
+                        });
+                    }
+                    // If no services from API, keep the hardcoded ones
+                })
+                .catch(err => {
+                    console.error('Error loading services from API:', err);
+                    // Keep hardcoded services on error
+                });
+        }
+
         function initAuthNav() {
             const user = localStorage.getItem('user');
             const authLinks = document.getElementById('authLinks');
@@ -171,17 +231,17 @@
 
         document.addEventListener('DOMContentLoaded', initAuthNav);
     </script>
-    <script src="js/register.js"></script>
+    <script src="js/register.js?v=1.1"></script>
     <script>
         // Google Sign-In Handler for Registration - Must be in global scope
         function handleGoogleRegister(response) {
             const credential = response.credential;
             console.log('Google register credential received');
-            
+
             // Decode JWT token to get user info
             const userInfo = parseJwt(credential);
             console.log('Decoded user info:', userInfo);
-            
+
             if (!userInfo) {
                 const errorMessage = document.getElementById('errorMessage');
                 if (errorMessage) {
@@ -190,11 +250,11 @@
                 }
                 return;
             }
-            
+
             // Get user type from the TOP dropdown (the prominent one)
             const userTypeTopSelect = document.getElementById('userTypeTop');
             const selectedType = userTypeTopSelect.value;
-            
+
             if (!selectedType) {
                 const errorMessage = document.getElementById('errorMessage');
                 if (errorMessage) {
@@ -208,74 +268,103 @@
                 userTypeTopSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
-            
+
             // Reset border color
             userTypeTopSelect.style.borderColor = '';
-            
+
+            // For providers, validate service selection
+            if (selectedType === 'provider') {
+                const serviceSelect = document.getElementById('serviceId');
+                const serviceId = serviceSelect ? serviceSelect.value : '';
+
+                if (!serviceId || serviceId === '') {
+                    const errorMessage = document.getElementById('errorMessage');
+                    if (errorMessage) {
+                        errorMessage.textContent = 'Please select a service category before signing in with Google';
+                        errorMessage.classList.add('show');
+                    }
+                    serviceSelect.style.borderColor = '#ef4444';
+                    serviceSelect.focus();
+                    serviceSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+
             // Automatically check the terms checkbox for Google registration
             const termsCheckbox = document.getElementById('terms');
             if (termsCheckbox) {
                 termsCheckbox.checked = true;
             }
-            
+
             processGoogleRegistration(credential, userInfo, selectedType);
         }
 
         function processGoogleRegistration(credential, userInfo, selectedType) {
-            console.log('Sending registration to backend with type:', selectedType);
-            
+            // Get service selection for providers
+            let googleRegData = {
+                credential: credential,
+                email: userInfo.email,
+                name: userInfo.name,
+                picture: userInfo.picture,
+                userType: selectedType
+            };
+
+            // Add serviceId for providers
+            if (selectedType === 'provider') {
+                const serviceSelect = document.getElementById('serviceId');
+                if (serviceSelect && serviceSelect.value) {
+                    googleRegData.serviceId = serviceSelect.value;
+                }
+            }
+
+            console.log('Sending registration to backend with type:', selectedType, 'data:', googleRegData);
+
             // Send to backend for account creation
             fetch('../backend/api/google-register.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    credential: credential,
-                    email: userInfo.email,
-                    name: userInfo.name,
-                    picture: userInfo.picture,
-                    userType: selectedType
+                body: JSON.stringify(googleRegData)
+            })
+                .then(res => {
+                    console.log('Backend response status:', res.status);
+                    return res.json();
                 })
-            })
-            .then(res => {
-                console.log('Backend response status:', res.status);
-                return res.json();
-            })
-            .then(data => {
-                console.log('Backend response:', data);
-                
-                if (data.success) {
-                    console.log('Storing user data...');
-                    // Store user data
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    localStorage.setItem('token', data.token);
-                    
-                    console.log('Redirecting...');
-                    // Redirect to dashboard
-                    setTimeout(() => {
-                        if (data.user.user_type === 'provider') {
-                            window.location.href = 'provider-dashboard.html';
-                        } else {
-                            window.location.href = 'customer-dashboard.html';
+                .then(data => {
+                    console.log('Backend response:', data);
+
+                    if (data.success) {
+                        console.log('Storing user data...');
+                        // Store user data
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        localStorage.setItem('token', data.token);
+
+                        console.log('Redirecting...');
+                        // Redirect to dashboard
+                        setTimeout(() => {
+                            if (data.user.user_type === 'provider') {
+                                window.location.href = 'provider-dashboard.html';
+                            } else {
+                                window.location.href = 'customer-dashboard.html';
+                            }
+                        }, 500);
+                    } else {
+                        const errorMessage = document.getElementById('errorMessage');
+                        if (errorMessage) {
+                            errorMessage.textContent = data.error || data.message || 'Google Sign-In failed. Please try again.';
+                            errorMessage.classList.add('show');
                         }
-                    }, 500);
-                } else {
+                    }
+                })
+                .catch(error => {
+                    console.error('Google registration error:', error);
                     const errorMessage = document.getElementById('errorMessage');
                     if (errorMessage) {
-                        errorMessage.textContent = data.error || data.message || 'Google Sign-In failed. Please try again.';
+                        errorMessage.textContent = 'An error occurred during Google Sign-In. Check browser console for details.';
                         errorMessage.classList.add('show');
                     }
-                }
-            })
-            .catch(error => {
-                console.error('Google registration error:', error);
-                const errorMessage = document.getElementById('errorMessage');
-                if (errorMessage) {
-                    errorMessage.textContent = 'An error occurred during Google Sign-In. Check browser console for details.';
-                    errorMessage.classList.add('show');
-                }
-            });
+                });
         }
 
         // Parse JWT token
@@ -283,7 +372,7 @@
             try {
                 const base64Url = token.split('.')[1];
                 const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
                     return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
                 }).join(''));
                 return JSON.parse(jsonPayload);
@@ -294,4 +383,5 @@
         }
     </script>
 </body>
+
 </html>

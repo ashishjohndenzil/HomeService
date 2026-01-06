@@ -34,6 +34,16 @@ try {
         $updateStmt = $pdo->prepare("UPDATE users SET last_login = NOW(), auth_provider = 'google', updated_at = NOW() WHERE id = ?");
         $updateStmt->execute([$user['id']]);
         
+        // Fetch category if provider
+        $category = null;
+        if ($user['user_type'] === 'provider') {
+            $catStmt = $pdo->prepare("SELECT s.category FROM providers p JOIN services s ON p.service_id = s.id WHERE p.user_id = ?");
+            $catStmt->execute([$user['id']]);
+            if ($catRow = $catStmt->fetch(PDO::FETCH_ASSOC)) {
+                $category = $catRow['category'];
+            }
+        }
+        
         sendResponse([
             'success' => true,
             'message' => 'Login successful',
@@ -42,7 +52,8 @@ try {
                 'full_name' => $user['full_name'],
                 'email' => $user['email'],
                 'user_type' => $user['user_type'],
-                'profile_picture' => $picture
+                'profile_picture' => $picture,
+                'category' => $category
             ],
             'token' => $token
         ]);

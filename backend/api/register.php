@@ -21,11 +21,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // For providers, validate service_id
+    if ($data['userType'] === 'provider' && empty($data['serviceId'])) {
+        $response['success'] = false;
+        $response['message'] = 'Service selection is required for providers';
+        echo json_encode($response);
+        exit;
+    }
+
     $fullName = trim($data['fullName']);
     $email = trim($data['email']);
     $phone = trim($data['phone']);
     $password = $data['password'];
     $userType = $data['userType'];
+    $serviceId = isset($data['serviceId']) ? intval($data['serviceId']) : null;
 
     // Validate email format
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -63,9 +72,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                VALUES (?, ?, ?, ?, ?, NOW())");
         
         if ($stmt->execute([$fullName, $email, $phone, $hashedPassword, $userType])) {
-            $response['success'] = true;
-            $response['message'] = 'Registration successful';
-            $response['userId'] = $pdo->lastInsertId();
+            $userId = $pdo->lastInsertId();
+            
+            // If provider, create provider record with selected service
+            if ($userType === 'provider' && $serviceId) {
+                try {
+                    $providerStmt = $pdo->prepare("INSERT INTO providers (user_id, service_id, created_at) 
+                                                   VALUES (?, ?, NOW())");
+                    $providerStmt->execute([$userId, $serviceId]);
+                    
+                    // Fetch the complete user data with service info
+                    $userQuery = $pdo->prepare("
+                        SELECT u.id, u.full_name, u.email, u.phone, u.user_type,
+                               s.id as service_id, s.name as service_name, s.category
+                        FROM users u
+                        LEFT JOIN providers p ON u.id = p.user_id
+                        LEFT JOIN services s ON p.service_id = s.id
+                        WHERE u.id = ?
+                    ");
+                    $userQuery->execute([$userId]);
+                    $userData = $userQuery->fetch();
+                    
+                    $response['success'] = true;
+                    $response['message'] = 'Registration successful';
+                    $response['userId'] = $userId;
+                    $response['user'] = $userData;
+                } catch (PDOException $e) {
+                    $response['success'] = false;
+                    $response['message'] = 'Provider setup failed: ' . $e->getMessage();
+                }
+            } else {
+                $response['success'] = true;
+                $response['message'] = 'Registration successful';
+                $response['userId'] = $userId;
+            }
         } else {
             $response['success'] = false;
             $response['message'] = 'Registration failed. Please try again';

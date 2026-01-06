@@ -12,28 +12,28 @@ function createSuggestionElement(field) {
 function validateFullName(field) {
     const suggestion = createSuggestionElement(field);
     const fullName = field.value.trim();
-    
+
     if (!fullName) {
         suggestion.textContent = 'Full name is required';
         suggestion.className = 'validation-suggestion error-suggestion';
         field.style.borderColor = '#ef4444';
         return false;
     }
-    
+
     if (fullName.length < 3) {
         suggestion.textContent = 'Name should be at least 3 characters long';
         suggestion.className = 'validation-suggestion warning-suggestion';
         field.style.borderColor = '#f59e0b';
         return false;
     }
-    
+
     if (!/^[a-zA-Z\s'-]+$/.test(fullName)) {
         suggestion.textContent = 'Name should only contain letters, spaces, hyphens, and apostrophes';
         suggestion.className = 'validation-suggestion warning-suggestion';
         field.style.borderColor = '#f59e0b';
         return false;
     }
-    
+
     suggestion.textContent = '✓ Name looks good';
     suggestion.className = 'validation-suggestion success-suggestion';
     field.style.borderColor = '#10b981';
@@ -43,14 +43,14 @@ function validateFullName(field) {
 function validateEmail(field) {
     const suggestion = createSuggestionElement(field);
     const email = field.value.trim();
-    
+
     if (!email) {
         suggestion.textContent = 'Email is required';
         suggestion.className = 'validation-suggestion error-suggestion';
         field.style.borderColor = '#ef4444';
         return false;
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         suggestion.textContent = 'Please enter a valid email format (e.g., user@example.com)';
@@ -58,7 +58,7 @@ function validateEmail(field) {
         field.style.borderColor = '#f59e0b';
         return false;
     }
-    
+
     suggestion.textContent = '✓ Email looks good';
     suggestion.className = 'validation-suggestion success-suggestion';
     field.style.borderColor = '#10b981';
@@ -67,12 +67,12 @@ function validateEmail(field) {
 
 function validatePhone(field) {
     console.log('validatePhone called with value:', field.value);
-    
+
     const suggestion = createSuggestionElement(field);
     const phone = field.value; // Don't trim here - let user type naturally
-    
+
     console.log('Phone value (no trim):', phone);
-    
+
     if (!phone || phone.length === 0) {
         suggestion.textContent = 'Phone number is required';
         suggestion.className = 'validation-suggestion error-suggestion';
@@ -80,7 +80,7 @@ function validatePhone(field) {
         console.log('Empty phone field');
         return false;
     }
-    
+
     const phoneRegex = /^[\d\s\-\+\(\)]+$/;
     if (!phoneRegex.test(phone)) {
         suggestion.textContent = '⚠ Phone should only contain numbers, spaces, hyphens, plus, and parentheses';
@@ -89,19 +89,19 @@ function validatePhone(field) {
         console.log('Invalid phone format:', phone);
         return false;
     }
-    
+
     // Count only digits for length check
     const digitCount = phone.replace(/\D/g, '').length;
-    
+
     console.log('Digit count:', digitCount);
-    
+
     if (digitCount < 10) {
         suggestion.textContent = `Phone number needs ${10 - digitCount} more digit(s)`;
         suggestion.className = 'validation-suggestion warning-suggestion';
         field.style.borderColor = '#f59e0b';
         return false;
     }
-    
+
     suggestion.textContent = '✓ Phone number looks good';
     suggestion.className = 'validation-suggestion success-suggestion';
     field.style.borderColor = '#10b981';
@@ -111,28 +111,28 @@ function validatePhone(field) {
 function validatePassword(field) {
     const suggestion = createSuggestionElement(field);
     const password = field.value;
-    
+
     if (!password) {
         suggestion.textContent = 'Password is required';
         suggestion.className = 'validation-suggestion error-suggestion';
         field.style.borderColor = '#ef4444';
         return false;
     }
-    
+
     if (password.length < 6) {
         suggestion.textContent = 'Password must be at least 6 characters long';
         suggestion.className = 'validation-suggestion warning-suggestion';
         field.style.borderColor = '#f59e0b';
         return false;
     }
-    
+
     if (password.length < 8) {
         suggestion.textContent = 'Consider using 8+ characters for better security';
         suggestion.className = 'validation-suggestion info-suggestion';
         field.style.borderColor = '#3b82f6';
         return true;
     }
-    
+
     suggestion.textContent = '✓ Password is strong';
     suggestion.className = 'validation-suggestion success-suggestion';
     field.style.borderColor = '#10b981';
@@ -143,77 +143,77 @@ function validateConfirmPassword(field) {
     const suggestion = createSuggestionElement(field);
     const confirmPassword = field.value;
     const password = document.getElementById('password').value;
-    
+
     if (!confirmPassword) {
         suggestion.textContent = 'Please confirm your password';
         suggestion.className = 'validation-suggestion error-suggestion';
         field.style.borderColor = '#ef4444';
         return false;
     }
-    
+
     if (password && confirmPassword !== password) {
         suggestion.textContent = 'Passwords do not match';
         suggestion.className = 'validation-suggestion error-suggestion';
         field.style.borderColor = '#ef4444';
         return false;
     }
-    
+
     if (confirmPassword === password && password) {
         suggestion.textContent = '✓ Passwords match';
         suggestion.className = 'validation-suggestion success-suggestion';
         field.style.borderColor = '#10b981';
         return true;
     }
-    
+
     suggestion.textContent = '';
     field.style.borderColor = '';
     return false;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const registerForm = document.getElementById('registerForm');
     const errorMessage = document.getElementById('errorMessage');
     const successMessage = document.getElementById('successMessage');
-    
+
     // Setup inline validation for all form fields
     const fullNameInput = document.getElementById('fullName');
     if (fullNameInput) {
-        fullNameInput.addEventListener('input', function() { validateFullName(this); });
-        fullNameInput.addEventListener('blur', function() { validateFullName(this); });
+        fullNameInput.addEventListener('input', function () { validateFullName(this); });
+        fullNameInput.addEventListener('blur', function () { validateFullName(this); });
     }
-    
+
     const emailInput = document.getElementById('email');
     if (emailInput) {
-        emailInput.addEventListener('input', function() { validateEmail(this); });
-        emailInput.addEventListener('blur', function() { validateEmail(this); });
+        emailInput.addEventListener('input', function () { validateEmail(this); });
+        emailInput.addEventListener('blur', function () { validateEmail(this); });
     }
-    
+
     const phoneInput = document.getElementById('phone');
     if (phoneInput) {
         // Prevent non-numeric characters from being typed
-        phoneInput.addEventListener('input', function(e) { 
+        phoneInput.addEventListener('input', function (e) {
             // Only allow digits, spaces, hyphens, plus, and parentheses
             this.value = this.value.replace(/[^0-9\s\-\+\(\)]/g, '');
-            validatePhone(this); 
+            validatePhone(this);
         });
-        phoneInput.addEventListener('blur', function() { validatePhone(this); });
-    }
-    
-    const passwordInput = document.getElementById('password');
-    if (passwordInput) {
-        passwordInput.addEventListener('input', function() { validatePassword(this); });
-        passwordInput.addEventListener('blur', function() { validatePassword(this); });
-    }
-    
-    const confirmPasswordInput = document.getElementById('confirmPassword');
-    if (confirmPasswordInput) {
-        confirmPasswordInput.addEventListener('input', function() { validateConfirmPassword(this); });
-        confirmPasswordInput.addEventListener('blur', function() { validateConfirmPassword(this); });
+        phoneInput.addEventListener('blur', function () { validatePhone(this); });
     }
 
-    registerForm.addEventListener('submit', async function(e) {
+    const passwordInput = document.getElementById('password');
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function () { validatePassword(this); });
+        passwordInput.addEventListener('blur', function () { validatePassword(this); });
+    }
+
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    if (confirmPasswordInput) {
+        confirmPasswordInput.addEventListener('input', function () { validateConfirmPassword(this); });
+        confirmPasswordInput.addEventListener('blur', function () { validateConfirmPassword(this); });
+    }
+
+    registerForm.addEventListener('submit', async function (e) {
         e.preventDefault();
-        
+
         // Clear previous messages
         errorMessage.classList.remove('show');
         successMessage.classList.remove('show');
@@ -226,12 +226,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const phone = document.getElementById('phone').value.trim();
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
-        const userType = document.getElementById('userType').value;
+
+        // Read userType from the visible dropdown (userTypeTop) instead of hidden field
+        const userTypeTop = document.getElementById('userTypeTop');
+        const userType = userTypeTop ? userTypeTop.value : document.getElementById('userType').value;
+
+        const serviceIdElement = document.getElementById('serviceId');
+        // Force fresh read of value
+        const serviceId = (userType === 'provider' && serviceIdElement) ? serviceIdElement.value : null;
         const terms = document.getElementById('terms').checked;
+
+        // Debug logging
+        console.log('Form submission debug:');
+        console.log('userType:', userType);
+        console.log('serviceId value:', serviceId);
+        console.log('serviceId element:', serviceIdElement);
+        console.log('serviceId element value:', serviceIdElement ? serviceIdElement.value : 'null');
 
         // Validation
         if (!fullName || !email || !phone || !password || !confirmPassword || !userType) {
             showError('Please fill in all fields');
+            return;
+        }
+
+        // Validate service selection for providers (check that it's not empty and not "")
+        if (userType === 'provider' && (!serviceId || serviceId === '')) {
+            showError('Please select a service category');
             return;
         }
 
@@ -273,6 +293,17 @@ document.addEventListener('DOMContentLoaded', function() {
             userType: userType
         };
 
+        // Add service ID for providers - Direct capture
+        if (userType === 'provider') {
+            const serviceIdEl = document.getElementById('serviceId');
+            if (serviceIdEl) {
+                formData.serviceId = serviceIdEl.value;
+                console.log('Sending serviceId:', formData.serviceId);
+            } else {
+                console.error('CRITICAL: serviceId element not found during payload construction');
+            }
+        }
+
         try {
             // Show loading state
             const submitBtn = registerForm.querySelector('button[type="submit"]');
@@ -296,20 +327,32 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.disabled = false;
 
             if (data.success) {
-                showSuccess('Registration successful! Redirecting to login...');
+                showSuccess('Registration successful! Redirecting...');
                 registerForm.reset();
-                
-                // Redirect to login page after 2 seconds
+
+                // Store user data and token if provided
+                if (data.user) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                }
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                }
+
+                // Redirect to appropriate dashboard
                 setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 2000);
+                    if (data.user && data.user.user_type === 'provider') {
+                        window.location.href = 'provider-dashboard.html';
+                    } else {
+                        window.location.href = 'login.html';
+                    }
+                }, 1500);
             } else {
                 showError(data.message || 'Registration failed. Please try again.');
             }
         } catch (error) {
             console.error('Registration error:', error);
             showError('An error occurred. Please try again later.');
-            
+
             // Reset button state
             const submitBtn = registerForm.querySelector('button[type="submit"]');
             submitBtn.textContent = 'Register';
