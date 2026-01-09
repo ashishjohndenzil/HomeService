@@ -67,6 +67,11 @@ try {
     
     $token = bin2hex(random_bytes(32));
     
+    // Store session token
+    $tokenStmt = $pdo->prepare("INSERT INTO user_sessions (user_id, token, created_at, expires_at) 
+                                VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))");
+    $tokenStmt->execute([$userId, $token]);
+    
     // Get the service category if provider
     $category = null;
     if ($userType === 'provider' && $serviceId) {

@@ -74,6 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->execute([$fullName, $email, $phone, $hashedPassword, $userType])) {
             $userId = $pdo->lastInsertId();
             
+            // Generate session token for auto-login
+            $token = bin2hex(random_bytes(32));
+            $tokenStmt = $pdo->prepare("INSERT INTO user_sessions (user_id, token, created_at, expires_at) 
+                                        VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))");
+            $tokenStmt->execute([$userId, $token]);
+            
             // If provider, create provider record with selected service
             if ($userType === 'provider' && $serviceId) {
                 try {
@@ -108,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $response['success'] = true;
                     $response['message'] = 'Registration successful';
+                    $response['token'] = $token;
                     $response['userId'] = $userId;
                     $response['user'] = $userData;
                 } catch (PDOException $e) {
@@ -115,9 +122,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $response['message'] = 'Provider setup failed: ' . $e->getMessage();
                 }
             } else {
+                // Fetch basic user data for customers
+                $userQuery = $pdo->prepare("SELECT id, full_name, email, phone, user_type FROM users WHERE id = ?");
+                $userQuery->execute([$userId]);
+                $userData = $userQuery->fetch();
+
                 $response['success'] = true;
                 $response['message'] = 'Registration successful';
+                $response['token'] = $token;
                 $response['userId'] = $userId;
+                $response['user'] = $userData;
             }
         } else {
             $response['success'] = false;

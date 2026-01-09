@@ -1,24 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - HomeService</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/auth.css">
-    <meta name="google-signin-client_id" content="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com">
+    <meta name="google-signin-client_id"
+        content="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
+
 <body>
     <nav class="navbar">
         <div class="container">
-            <div class="logo">
+            <a href="index.html" class="logo" style="text-decoration: none; color: inherit;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                     <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
                 HomeService
-            </div>
+            </a>
             <ul class="nav-links">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="#services">Services</a></li>
@@ -38,28 +41,22 @@
         <div class="auth-box">
             <h2>Welcome Back</h2>
             <p class="auth-subtitle">Login to access your account</p>
-            
+
             <!-- Google Sign-In Button -->
             <div id="g_id_onload"
-                 data-client_id="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com"
-                 data-callback="handleGoogleLogin">
+                data-client_id="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com"
+                data-callback="handleGoogleLogin">
             </div>
             <div class="google-btn-wrapper">
-                <div class="g_id_signin"
-                     data-type="standard"
-                     data-size="large"
-                     data-theme="outline"
-                     data-text="signin_with"
-                     data-shape="rectangular"
-                     data-logo_alignment="left"
-                     data-width="350">
+                <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline"
+                    data-text="signin_with" data-shape="rectangular" data-logo_alignment="left" data-width="350">
                 </div>
             </div>
-            
+
             <div class="auth-divider">
                 <span>OR</span>
             </div>
-            
+
             <form id="loginForm" class="auth-form">
                 <div class="form-group">
                     <label for="email">Email Address</label>
@@ -130,11 +127,11 @@
         function handleGoogleLogin(response) {
             const credential = response.credential;
             console.log('Google login credential received');
-            
+
             // Decode JWT token to get user info
             const userInfo = parseJwt(credential);
             console.log('Decoded user info:', userInfo);
-            
+
             if (!userInfo) {
                 const errorMessage = document.getElementById('errorMessage');
                 if (errorMessage) {
@@ -143,9 +140,9 @@
                 }
                 return;
             }
-            
+
             console.log('Sending login request to backend...');
-            
+
             // Send to backend for verification and account creation/login
             fetch('../backend/api/google-login.php', {
                 method: 'POST',
@@ -159,44 +156,44 @@
                     picture: userInfo.picture
                 })
             })
-            .then(res => {
-                console.log('Backend response status:', res.status);
-                return res.json();
-            })
-            .then(data => {
-                console.log('Backend response:', data);
-                
-                if (data.success) {
-                    console.log('Login successful, storing user data...');
-                    // Store user data
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    localStorage.setItem('token', data.token);
-                    
-                    console.log('Redirecting to dashboard...');
-                    // Redirect to dashboard
-                    setTimeout(() => {
-                        if (data.user.user_type === 'provider') {
-                            window.location.href = 'provider-dashboard.html';
-                        } else {
-                            window.location.href = 'customer-dashboard.html';
+                .then(res => {
+                    console.log('Backend response status:', res.status);
+                    return res.json();
+                })
+                .then(data => {
+                    console.log('Backend response:', data);
+
+                    if (data.success) {
+                        console.log('Login successful, storing user data...');
+                        // Store user data
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        localStorage.setItem('token', data.token);
+
+                        console.log('Redirecting to dashboard...');
+                        // Redirect to dashboard
+                        setTimeout(() => {
+                            if (data.user.user_type === 'provider') {
+                                window.location.href = 'provider-dashboard.html';
+                            } else {
+                                window.location.href = 'customer-dashboard.html';
+                            }
+                        }, 500);
+                    } else {
+                        const errorMessage = document.getElementById('errorMessage');
+                        if (errorMessage) {
+                            errorMessage.textContent = data.error || data.message || 'Google Sign-In failed. Please try again.';
+                            errorMessage.classList.add('show');
                         }
-                    }, 500);
-                } else {
+                    }
+                })
+                .catch(error => {
+                    console.error('Google login error:', error);
                     const errorMessage = document.getElementById('errorMessage');
                     if (errorMessage) {
-                        errorMessage.textContent = data.error || data.message || 'Google Sign-In failed. Please try again.';
+                        errorMessage.textContent = 'An error occurred during Google Sign-In. Check console for details.';
                         errorMessage.classList.add('show');
                     }
-                }
-            })
-            .catch(error => {
-                console.error('Google login error:', error);
-                const errorMessage = document.getElementById('errorMessage');
-                if (errorMessage) {
-                    errorMessage.textContent = 'An error occurred during Google Sign-In. Check console for details.';
-                    errorMessage.classList.add('show');
-                }
-            });
+                });
         }
 
         // Parse JWT token
@@ -204,7 +201,7 @@
             try {
                 const base64Url = token.split('.')[1];
                 const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
                     return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
                 }).join(''));
                 return JSON.parse(jsonPayload);
@@ -215,4 +212,5 @@
         }
     </script>
 </body>
+
 </html>

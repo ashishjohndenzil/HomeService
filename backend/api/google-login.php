@@ -33,6 +33,11 @@ try {
         // Update last login and auth provider
         $updateStmt = $pdo->prepare("UPDATE users SET last_login = NOW(), auth_provider = 'google', updated_at = NOW() WHERE id = ?");
         $updateStmt->execute([$user['id']]);
+
+        // Store session token
+        $tokenStmt = $pdo->prepare("INSERT INTO user_sessions (user_id, token, created_at, expires_at) 
+                                    VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))");
+        $tokenStmt->execute([$user['id'], $token]);
         
         // Fetch category if provider
         $category = null;
@@ -72,6 +77,11 @@ try {
         
         $userId = $pdo->lastInsertId();
         $token = bin2hex(random_bytes(32));
+        
+        // Store session token
+        $tokenStmt = $pdo->prepare("INSERT INTO user_sessions (user_id, token, created_at, expires_at) 
+                                    VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))");
+        $tokenStmt->execute([$userId, $token]);
         
         sendResponse([
             'success' => true,

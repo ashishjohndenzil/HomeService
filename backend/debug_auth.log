@@ -1,0 +1,30 @@
+--- New Request ---
+Headers: Array
+(
+    [Host] => localhost
+    [Connection] => keep-alive
+    [sec-ch-ua-platform] => "Windows"
+    [Authorization] => Bearer c9134a3bb4bbc38cf83e4a2e589848036257df1efdbcd25f56fd870628ef4440
+    [User-Agent] => Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+    [sec-ch-ua] => "Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"
+    [Content-Type] => application/json
+    [sec-ch-ua-mobile] => ?0
+    [Accept] => */*
+    [Sec-Fetch-Site] => same-origin
+    [Sec-Fetch-Mode] => cors
+    [Sec-Fetch-Dest] => empty
+    [Referer] => http://localhost/HomeService/frontend/provider-dashboard.html
+    [Accept-Encoding] => gzip, deflate, br, zstd
+    [Accept-Language] => en-US,en;q=0.9
+    [Cookie] => g_state={"i_l":0,"i_ll":1767773988966}
+)
+
+GET: Array
+(
+    [token] => c9134a3bb4bbc38cf83e4a2e589848036257df1efdbcd25f56fd870628ef4440
+)
+
+Extracted Token: c9134a3bb4bbc38cf83e4a2e589848036257df1efdbcd25f56fd870628ef4440
+Token Invalid or Expired
+Session Dump: 
+DB Time: 2026-01-07 13:51:38
