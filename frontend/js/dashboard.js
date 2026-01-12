@@ -14,6 +14,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const userData = JSON.parse(user);
     const userType = userData.user_type || userData.userType || 'customer';
 
+    // Redirect admin to admin dashboard if they land here
+    if (userType === 'admin') {
+        window.location.href = 'admin-dashboard.html';
+        return;
+    }
+
     console.log('User data from localStorage:', userData);
 
     // Populate user information (handle both snake_case from backend and camelCase from old data)
@@ -607,11 +613,79 @@ async function cancelBooking(bookingId) {
 }
 
 // Review booking (customer)
+// Review booking (customer)
 function reviewBooking(bookingId) {
-    console.log('Reviewing booking:', bookingId);
-    // TODO: Implement review modal
-    alert('Review feature coming soon!');
+    const modal = document.getElementById('reviewModal');
+    if (!modal) return;
+
+    document.getElementById('reviewBookingId').value = bookingId;
+    document.getElementById('reviewComment').value = '';
+
+    // Reset stars
+    const stars = document.querySelectorAll('input[name="rating"]');
+    stars.forEach(s => s.checked = false);
+
+    modal.style.display = 'block';
 }
+
+function closeReviewModal() {
+    const modal = document.getElementById('reviewModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Handle Review Submit
+document.addEventListener('DOMContentLoaded', () => {
+    const reviewForm = document.getElementById('reviewForm');
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const bookingId = document.getElementById('reviewBookingId').value;
+            const comment = document.getElementById('reviewComment').value;
+            const ratingInput = document.querySelector('input[name="rating"]:checked');
+
+            if (!ratingInput) {
+                alert('Please select a rating');
+                return;
+            }
+
+            const rating = ratingInput.value;
+
+            const token = localStorage.getItem('token');
+            showLoadingState(true);
+
+            fetch('../backend/api/submit-review.php', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    booking_id: bookingId,
+                    rating: parseFloat(rating),
+                    review: comment
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    showLoadingState(false);
+                    if (data.success) {
+                        showNotification('Review submitted successfully', 'success');
+                        closeReviewModal();
+                        // Optionally hide review button or reload bookings
+                        loadBookings('completed');
+                    } else {
+                        showNotification(data.message || 'Failed to submit review', 'error');
+                    }
+                })
+                .catch(err => {
+                    showLoadingState(false);
+                    console.error(err);
+                    showNotification('Error submitting review', 'error');
+                });
+        });
+    }
+});
 
 // Update booking status (provider)
 async function updateBookingStatus(bookingId, newStatus) {
@@ -651,68 +725,190 @@ async function updateBookingStatus(bookingId, newStatus) {
 }
 
 // Provider service management functions
+// Provider service management functions
 function showAddServiceModal() {
-    alert('Add Service feature coming soon!');
+    const modal = document.getElementById('addServiceModal');
+    if (!modal) return;
+
+    // Reset form
+    document.getElementById('addServiceForm').reset();
+
+    // Load available service types from backend
+    fetch('../backend/api/services.php') // Using public services endpoint to get categories
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById('newServiceId');
+            select.innerHTML = '<option value="">Select a service...</option>';
+
+            const services = data.services || data.data || [];
+            // Remove duplicates if any
+            const uniqueServices = Array.from(new Map(services.map(s => [s.name, s])).values());
+
+            uniqueServices.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s.id; // Correct ID reference
+                option.textContent = s.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(err => console.error('Error loading service types:', err));
+
+    modal.style.display = 'block';
 }
 
-function editService(serviceId, currentRate, currentExp, serviceName) {
-    const newRate = prompt(`Update Hourly Rate for ${serviceName} (₹):`, currentRate);
-    if (newRate === null) return; // Cancelled
+function closeAddServiceModal() {
+    const modal = document.getElementById('addServiceModal');
+    if (modal) modal.style.display = 'none';
+}
 
-    if (isNaN(newRate) || newRate <= 0) {
-        alert("Please enter a valid positive number for the rate.");
-        return;
+// Handle Add Service Form Submit
+document.addEventListener('DOMContentLoaded', () => {
+    const addForm = document.getElementById('addServiceForm');
+    if (addForm) {
+        addForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const serviceId = document.getElementById('newServiceId').value;
+            const rate = document.getElementById('newHourlyRate').value;
+            const experience = document.getElementById('newExperience').value;
+            const description = document.getElementById('newDescription').value;
+
+            if (!serviceId) {
+                alert('Please select a service type');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            showLoadingState(true);
+
+            fetch('../backend/api/add-service.php', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    service_id: serviceId,
+                    hourly_rate: parseFloat(rate),
+                    experience_years: parseInt(experience),
+                    description: description
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    showLoadingState(false);
+                    if (data.success) {
+                        showNotification('Service added successfully', 'success');
+                        closeAddServiceModal();
+                        loadProviderServices();
+                    } else {
+                        showNotification(data.message || 'Failed to add service', 'error');
+                    }
+                })
+                .catch(err => {
+                    showLoadingState(false);
+                    console.error(err);
+                    showNotification('Error adding service', 'error');
+                });
+        });
     }
 
-    const newExp = prompt(`Update Experience (Years) for ${serviceName}:`, currentExp);
-    if (newExp === null) return; // Cancelled
+    // Edit Form Listener
+    const editForm = document.getElementById('editServiceForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function (e) {
+            e.preventDefault();
 
-    if (isNaN(newExp) || newExp < 0) {
-        alert("Please enter a valid number for experience.");
+            const serviceId = document.getElementById('editServiceId').value;
+            const rate = document.getElementById('editHourlyRate').value;
+            const exp = document.getElementById('editExperience').value;
+
+            const token = localStorage.getItem('token');
+            showLoadingState(true);
+
+            fetch('../backend/api/update-service.php', { // Reusing update-service.php
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    service_id: serviceId,
+                    hourly_rate: parseFloat(rate),
+                    experience_years: parseInt(exp)
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    showLoadingState(false);
+                    if (data.success) {
+                        showNotification('Service updated successfully', 'success');
+                        closeEditServiceModal();
+                        loadProviderServices();
+                    } else {
+                        showNotification(data.message || 'Failed to update service', 'error');
+                    }
+                })
+                .catch(err => {
+                    showLoadingState(false);
+                    console.error(err);
+                    showNotification('Error updating service', 'error');
+                });
+        });
+    }
+});
+
+
+// Edit Service Logic Handled in Modal now, this opens it
+function editService(serviceId, currentRate, currentExp, serviceName) {
+    const modal = document.getElementById('editServiceModal');
+    if (!modal) return;
+
+    document.getElementById('editServiceId').value = serviceId;
+    document.getElementById('editServiceName').value = serviceName;
+    document.getElementById('editHourlyRate').value = currentRate;
+    document.getElementById('editExperience').value = currentExp;
+
+    modal.style.display = 'block';
+}
+
+function closeEditServiceModal() {
+    const modal = document.getElementById('editServiceModal');
+    if (modal) modal.style.display = 'none';
+}
+
+
+function deleteService(serviceId) {
+    if (!confirm('Are you sure you want to delete this service? This action cannot be undone.')) {
         return;
     }
 
     const token = localStorage.getItem('token');
-    if (!token) {
-        alert("Please login again.");
-        return;
-    }
-
     showLoadingState(true);
 
-    fetch('../backend/api/update-service.php', {
+    fetch('../backend/api/delete-service.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            service_id: serviceId,
-            hourly_rate: parseFloat(newRate),
-            experience_years: parseInt(newExp)
-        })
+        body: JSON.stringify({ service_id: serviceId })
     })
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
             showLoadingState(false);
             if (data.success) {
-                showNotification('Service updated successfully', 'success');
-                loadProviderServices(); // Refresh list to show new values
+                showNotification('Service deleted successfully', 'success');
+                loadProviderServices();
             } else {
-                showNotification(data.message || 'Failed to update service', 'error');
+                showNotification(data.message || 'Failed to delete service', 'error');
             }
         })
-        .catch(error => {
+        .catch(err => {
             showLoadingState(false);
-            console.error('Error updating service:', error);
-            showNotification('An error occurred. Please try again.', 'error');
+            console.error('Error deleting service', err);
+            showNotification('Error deleting service', 'error');
         });
-}
-
-function deleteService(serviceId) {
-    if (confirm('Are you sure you want to delete this service?')) {
-        alert('Delete Service feature coming soon!');
-    }
 }
 
 // Show Loading Overlay

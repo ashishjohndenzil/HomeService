@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - HomeService</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/dashboard.css?v=3">
+    <link rel="stylesheet" href="css/admin-dashboard.css?v=3">
+</head>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo" style="text-decoration: none; color: inherit;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                HomeService
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="#" class="nav-btn" onclick="logout()">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="dashboard-sidebar">
+            <div class="sidebar-user">
+                <div class="user-avatar" id="adminAvatar">👨‍💼</div>
+                <h3 id="adminName">Admin</h3>
+                <p>admin@homeservice.com</p>
+                <span class="provider-badge">ADMIN</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-page="statistics">
+                    📊 Statistics
+                </a>
+                <a href="#" class="nav-item" data-page="users">
+                    👥 User Management
+                </a>
+                <a href="#" class="nav-item" data-page="bookings">
+                    📅 All Bookings
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    ⚙️ Settings
+                </a>
+                <a href="#" class="nav-item logout-btn" onclick="logout()">
+                    🚪 Logout
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <header class="page-header" style="margin-bottom: 2rem;">
+                <div class="user-welcome">
+                    <h1>Admin Dashboard</h1>
+                </div>
+            </header>
+
+            <div id="contentArea">
+
+                <!-- Statistics Page -->
+                <div id="statistics" class="page active">
+                    <div class="page-header">
+                        <h1>System Overview</h1>
+                        <button class="btn btn-primary" onclick="loadStats()">Refresh Stats</button>
+                    </div>
+
+                    <div class="dashboard-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <h3 id="totalUsers">Loading...</h3>
+                                <p>Total Users</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🛠️</div>
+                            <div class="stat-content">
+                                <h3 id="totalProviders">Loading...</h3>
+                                <p>Service Providers</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📅</div>
+                            <div class="stat-content">
+                                <h3 id="totalBookings">Loading...</h3>
+                                <p>Total Bookings</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-content">
+                                <h3 id="totalRevenue">Loading...</h3>
+                                <p>Total Revenue</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Page -->
+                <div id="users" class="page">
+                    <div class="page-header">
+                        <h1>User Management</h1>
+                    </div>
+                    <div class="bookings-filters">
+                        <input type="text" id="userSearch" placeholder="Search users..." onkeyup="filterUsers()"
+                            class="form-control">
+                        <select id="userTypeFilter" onchange="filterUsers()" class="form-control">
+                            <option value="all">All Types</option>
+                            <option value="customer">Customers</option>
+                            <option value="provider">Providers</option>
+                        </select>
+                    </div>
+                    <div class="bookings-list">
+                        <table id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersList">
+                                <tr>
+                                    <td colspan="7">Loading users...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Bookings Page -->
+                <div id="bookings" class="page">
+                    <div class="page-header">
+                        <h1>All Bookings</h1>
+                    </div>
+                    <div class="bookings-filters">
+                        <select id="bookingStatusFilter" onchange="filterBookings()"
+                            style="padding: 10px; border: 1px solid #ccc; border-radius: 8px;">
+                            <option value="all">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="bookings-list">
+                        <table id="bookingsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Service</th>
+                                    <th>Customer</th>
+                                    <th>Provider</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookingsList">
+                                <tr>
+                                    <td colspan="7">Loading bookings...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div id="settings" class="page">
+                    <div class="page-header">
+                        <h1>Admin Settings</h1>
+                    </div>
+                    <div class="profile-form">
+                        <h3>Profile Settings</h3>
+                        <form id="adminSettingsForm">
+                            <div class="form-group">
+                                <label>Name</label>
+                                <input type="text" id="settingsName" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="settingsEmail" disabled>
+                            </div>
+                            <p class="verification-note">Admin details cannot be changed from here.</p>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="toast-container"></div>
+
+    <script src="js/admin-dashboard.js?v=3"></script>
+</body>
+
+
+</html>

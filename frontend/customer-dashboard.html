@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="css/style.css?v=2">
     <link rel="stylesheet" href="css/dashboard.css?v=2">
 </head>
+
 <body>
     <nav class="navbar">
         <div class="container">
@@ -55,7 +57,7 @@
                     <h1>Welcome to Your Dashboard</h1>
                     <p>Manage your bookings and find services</p>
                 </div>
-                
+
                 <div class="dashboard-stats">
                     <div class="stat-card">
                         <div class="stat-icon">📅</div>
@@ -140,7 +142,37 @@
         </main>
     </div>
 
+    <!-- Review Modal -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeReviewModal()">&times;</span>
+            <h2>Write a Review</h2>
+            <form id="reviewForm">
+                <input type="hidden" id="reviewBookingId">
+                <div class="form-group">
+                    <label>Rating</label>
+                    <div class="star-rating">
+                        <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
+                        <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
+                        <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
+                        <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
+                        <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="reviewComment">Your Review</label>
+                    <textarea id="reviewComment" rows="4" placeholder="Share your experience..."></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeReviewModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="js/booking.js?v=6"></script>
     <script src="js/dashboard.js?v=6"></script>
 </body>
+
 </html>
