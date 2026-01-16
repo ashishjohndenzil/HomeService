@@ -76,6 +76,28 @@
                     in</small>
             </div>
 
+            <!-- Phone Number (Common for both Google and Standard) -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="initial_phone" style="font-weight: 600; margin-bottom: 8px; display: block;">Phone Number
+                    <span style="color: #ef4444;">*</span></label>
+                <input type="tel" id="initial_phone" name="initial_phone" required
+                    placeholder="Enter your 10-digit number"
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 16px;">
+                <small style="color: #666; display: block; margin-top: 5px;">Required for contacting you about
+                    bookings</small>
+            </div>
+
+            <!-- Location (Common for both Google and Standard) -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="initial_location" style="font-weight: 600; margin-bottom: 8px; display: block;">Location
+                    (City/Area) <span style="color: #ef4444;">*</span></label>
+                <input type="text" id="initial_location" name="initial_location" required
+                    placeholder="e.g. New York, NY"
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 16px;">
+                <small style="color: #666; display: block; margin-top: 5px;">We need your location to show relevant
+                    services</small>
+            </div>
+
             <!-- Google Sign-In Button -->
             <div id="g_id_onload"
                 data-client_id="190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com"
@@ -104,8 +126,73 @@
 
                 <div class="form-group">
                     <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" required>
+                    <input type="tel" id="phone" name="phone" required placeholder="Enter your 10-digit number">
                 </div>
+
+
+
+                <div class="form-group" style="position: relative;">
+                    <label for="location">Location (City/Area)</label>
+                    <input type="text" id="location" name="location" placeholder="Start typing your city..." required
+                        autocomplete="off">
+                    <ul id="locationSuggestions" class="suggestions-list"
+                        style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; max-height: 200px; overflow-y: auto; z-index: 1000; list-style: none; padding: 0; margin: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    </ul>
+                </div>
+
+                <script>
+                    // Simple Autocomplete for Location
+                    const locInput = document.getElementById('location');
+                    const locList = document.getElementById('locationSuggestions');
+                    let debounceTimer;
+
+                    locInput.addEventListener('input', function () {
+                        const query = this.value.toLowerCase();
+                        clearTimeout(debounceTimer);
+
+                        if (query.length < 3) {
+                            locList.style.display = 'none';
+                            return;
+                        }
+
+                        // Show loading or just wait for debounce
+                        debounceTimer = setTimeout(() => {
+                            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=in`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    locList.innerHTML = '';
+                                    if (data.length > 0) {
+                                        data.forEach(item => {
+                                            const li = document.createElement('li');
+                                            li.textContent = item.display_name;
+                                            li.style.padding = '10px';
+                                            li.style.cursor = 'pointer';
+                                            li.style.borderBottom = '1px solid #eee';
+                                            li.addEventListener('mouseenter', () => li.style.backgroundColor = '#f0f0f0');
+                                            li.addEventListener('mouseleave', () => li.style.backgroundColor = 'white');
+
+                                            li.addEventListener('click', () => {
+                                                locInput.value = item.display_name;
+                                                locList.style.display = 'none';
+                                            });
+                                            locList.appendChild(li);
+                                        });
+                                        locList.style.display = 'block';
+                                    } else {
+                                        locList.style.display = 'none';
+                                    }
+                                })
+                                .catch(err => console.error('Error fetching location:', err));
+                        }, 300);
+                    });
+
+                    // Close suggestions on click outside
+                    document.addEventListener('click', function (e) {
+                        if (e.target !== locInput && e.target !== locList) {
+                            locList.style.display = 'none';
+                        }
+                    });
+                </script>
 
                 <div class="form-group">
                     <label for="password">Password</label>
@@ -144,6 +231,34 @@
 
             <div class="auth-footer">
                 Already have an account? <a href="login.html">Login here</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phone Number Modal for Google Register -->
+    <div id="googlePhoneModal" class="modal"
+        style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+        <div class="modal-content"
+            style="background-color: #fefefe; margin: auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 400px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+            <h3 style="margin-top: 0; color: #333; font-size: 1.5rem; text-align: center;">One Last Step!</h3>
+            <p style="text-align: center; color: #666; margin-bottom: 20px;">Please enter your phone number to complete
+                registration.</p>
+
+            <div class="form-group">
+                <label for="googlePhone" style="display: block; margin-bottom: 8px; font-weight: 500;">Phone Number
+                    <span style="color: red;">*</span></label>
+                <input type="tel" id="googlePhone" placeholder="Enter your 10-digit number"
+                    style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px;">
+                <small id="googlePhoneError" style="color: red; display: none; margin-top: 5px;">Invalid phone
+                    number</small>
+            </div>
+
+            <div style="margin-top: 25px; display: flex; gap: 10px;">
+                <button type="button" onclick="closeGooglePhoneModal()"
+                    style="padding: 12px; border: none; background: #e5e7eb; color: #333; border-radius: 6px; cursor: pointer; flex: 1; font-weight: 600;">Cancel</button>
+                <button type="button" onclick="submitGooglePhone()"
+                    style="padding: 12px; border: none; background: #2563eb; color: white; border-radius: 6px; cursor: pointer; flex: 1; font-weight: 600;">Complete
+                    Signup</button>
             </div>
         </div>
     </div>
@@ -232,7 +347,7 @@
 
         document.addEventListener('DOMContentLoaded', initAuthNav);
     </script>
-    <script src="js/register.js?v=1.1"></script>
+    <script src="js/register.js?v=1.3"></script>
     <script>
         // Google Sign-In Handler for Registration - Must be in global scope
         function handleGoogleRegister(response) {
@@ -291,23 +406,79 @@
                 }
             }
 
+            // --- CHECK FOR PHONE NUMBER ---
+            const phoneInput = document.getElementById('initial_phone');
+            const phoneNumber = phoneInput ? phoneInput.value.trim() : '';
+
+            // --- CHECK FOR LOCATION ---
+            const locationInput = document.getElementById('initial_location');
+            const locationValue = locationInput ? locationInput.value.trim() : '';
+
+
+            if (!phoneNumber) {
+                const errorMessage = document.getElementById('errorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = 'Please enter your Phone Number (above the Google button) to continue with Google Sign-Up.';
+                    errorMessage.classList.add('show');
+                    errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                if (phoneInput) {
+                    phoneInput.style.borderColor = '#ef4444';
+                    phoneInput.focus();
+                    phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+
+            if (!locationValue) {
+                const errorMessage = document.getElementById('errorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = 'Please enter your Location (above the Google button) to continue with Google Sign-Up.';
+                    errorMessage.classList.add('show');
+                    errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                if (locationInput) {
+                    locationInput.style.borderColor = '#ef4444';
+                    locationInput.focus();
+                    locationInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+
+
+            // Check phone format (basic check)
+            if (phoneNumber.length < 10) {
+                const errorMessage = document.getElementById('errorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = 'Please enter a valid Phone Number (at least 10 digits).';
+                    errorMessage.classList.add('show');
+                }
+                if (phoneInput) {
+                    phoneInput.style.borderColor = '#ef4444';
+                    phoneInput.focus();
+                }
+                return;
+            }
+
             // Automatically check the terms checkbox for Google registration
             const termsCheckbox = document.getElementById('terms');
             if (termsCheckbox) {
                 termsCheckbox.checked = true;
             }
 
-            processGoogleRegistration(credential, userInfo, selectedType);
+            processGoogleRegistration(credential, userInfo, selectedType, phoneNumber, locationValue);
         }
 
-        function processGoogleRegistration(credential, userInfo, selectedType) {
+        function processGoogleRegistration(credential, userInfo, selectedType, phoneNumber, locationValue) {
             // Get service selection for providers
             let googleRegData = {
                 credential: credential,
                 email: userInfo.email,
                 name: userInfo.name,
                 picture: userInfo.picture,
-                userType: selectedType
+                userType: selectedType,
+                phone: phoneNumber,
+                location: locationValue
             };
 
             // Add serviceId for providers
@@ -318,7 +489,7 @@
                 }
             }
 
-            console.log('Sending registration to backend with type:', selectedType, 'data:', googleRegData);
+            console.log('Sending registration to backend', googleRegData);
 
             // Send to backend for account creation
             fetch('../backend/api/google-register.php', {
@@ -328,21 +499,15 @@
                 },
                 body: JSON.stringify(googleRegData)
             })
-                .then(res => {
-                    console.log('Backend response status:', res.status);
-                    return res.json();
-                })
+                .then(res => res.json())
                 .then(data => {
                     console.log('Backend response:', data);
 
                     if (data.success) {
-                        console.log('Storing user data...');
-                        // Store user data
+                        // Registration Success
                         localStorage.setItem('user', JSON.stringify(data.user));
                         localStorage.setItem('token', data.token);
 
-                        console.log('Redirecting...');
-                        // Redirect to dashboard
                         setTimeout(() => {
                             if (data.user.user_type === 'provider') {
                                 window.location.href = 'provider-dashboard.html';
@@ -350,10 +515,20 @@
                                 window.location.href = 'customer-dashboard.html';
                             }
                         }, 500);
-                    } else {
+
+                    } else if (data.require_phone) {
+                        // This shouldn't be reached if frontend validation works, 
+                        // but as a fallback:
                         const errorMessage = document.getElementById('errorMessage');
                         if (errorMessage) {
-                            errorMessage.textContent = data.error || data.message || 'Google Sign-In failed. Please try again.';
+                            errorMessage.textContent = 'Phone number is required. Please check the field below.';
+                            errorMessage.classList.add('show');
+                        }
+                    } else {
+                        // Error
+                        const errorMessage = document.getElementById('errorMessage');
+                        if (errorMessage) {
+                            errorMessage.textContent = data.error || data.message || 'Google Sign-In failed.';
                             errorMessage.classList.add('show');
                         }
                     }
@@ -362,11 +537,12 @@
                     console.error('Google registration error:', error);
                     const errorMessage = document.getElementById('errorMessage');
                     if (errorMessage) {
-                        errorMessage.textContent = 'An error occurred during Google Sign-In. Check browser console for details.';
+                        errorMessage.textContent = 'An error occurred. Check console.';
                         errorMessage.classList.add('show');
                     }
                 });
         }
+
 
         // Parse JWT token
         function parseJwt(token) {

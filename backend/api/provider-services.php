@@ -72,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 p.rating,
                 p.total_reviews,
                 p.is_verified,
+                p.portfolio_image,
                 p.created_at
             FROM providers p
             JOIN services s ON p.service_id = s.id

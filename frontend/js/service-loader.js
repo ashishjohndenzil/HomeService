@@ -62,8 +62,10 @@ function renderProviders(providers, container) {
                     <span class="value">${(provider.experience_years && provider.experience_years !== 'null') ? provider.experience_years + ' Years' : 'New Pro'}</span>
                 </div>
                 <div class="stat">
-                    <span class="label">Rating</span>
-                    <span class="value">⭐ ${provider.rating || 'New'}</span>
+                    <span class="value" style="display: flex; align-items: center; gap: 2px;">
+                        ${renderStarRating(provider.rating || 0)} 
+                        <span style="font-size: 0.85em; color: #666; margin-left: 4px;">(${parseFloat(provider.rating || 0).toFixed(1)})</span>
+                    </span>
                 </div>
             </div>
             
@@ -83,4 +85,49 @@ function renderProviders(providers, container) {
     });
 
     container.appendChild(grid);
+}
+
+function renderStarRating(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    let html = '';
+
+    // Full Stars
+    for (let i = 0; i < fullStars; i++) {
+        html += '<span style="color: #FFD700; font-size: 1.1em;">★</span>'; // Gold star
+    }
+
+    // Half Star (using simple text approximation or CSS, here simple unicode)
+    // Precise half star is hard with just char, using a different color or char if possible, 
+    // or just a full star with different style. Let's start with standard full/empty for MVP polish.
+    // actually, for half star, let's just use a full star but maybe different opacity or a specific character if available.
+    // Unicode doesn't have a reliable half-star across fonts. 
+    // I previously used simple text. The user wants "do the ratings".
+    // Let's stick to full stars for logical checking, but maybe I can use SVGs for perfection?
+    // User asked for "do the ratings", implies visual.
+    // I will use SVGs for best result.
+
+    return generateStarSvgs(rating);
+}
+
+function generateStarSvgs(rating) {
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+            // Full Star
+            html += `<svg width="16" height="16" viewBox="0 0 24 24" fill="#FFD700" stroke="#B8860B" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+        } else if (i - 0.5 <= rating) {
+            // Half Star (Gradient)
+            html += `<svg width="16" height="16" viewBox="0 0 24 24" fill="url(#halfStar)" stroke="#B8860B" stroke-width="1">
+                        <defs><linearGradient id="halfStar"><stop offset="50%" stop-color="#FFD700"/><stop offset="50%" stop-color="#E0E0E0"/></linearGradient></defs>
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                     </svg>`;
+        } else {
+            // Empty Star
+            html += `<svg width="16" height="16" viewBox="0 0 24 24" fill="#E0E0E0" stroke="#999" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+        }
+    }
+    return html;
 }

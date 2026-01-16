@@ -39,15 +39,29 @@ try {
         handleError('An account with this email already exists. Please login instead.');
     }
     
+    // Check if phone and location are provided
+    $phone = isset($data['phone']) ? trim($data['phone']) : '';
+    $location = isset($data['location']) ? trim($data['location']) : '';
+
     // Create new user
+    // If phone is missing, request it
+    if (empty($phone)) {
+        sendResponse([
+            'success' => false,
+            'require_phone' => true,
+            'message' => 'Phone number is required'
+        ]);
+        exit;
+    }
+
     $stmt = $pdo->prepare("
-        INSERT INTO users (full_name, email, password, user_type, phone, auth_provider, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, '', 'google', NOW(), NOW())
+        INSERT INTO users (full_name, email, password, user_type, phone, location, auth_provider, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?, 'google', NOW(), NOW())
     ");
     
     // Use a random password since they're using Google auth
     $randomPassword = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
-    if (!$stmt->execute([$name, $email, $randomPassword, $userType])) {
+    if (!$stmt->execute([$name, $email, $randomPassword, $userType, $phone, $location])) {
         handleError('Failed to create account');
     }
     
@@ -89,6 +103,8 @@ try {
             'full_name' => $name,
             'email' => $email,
             'user_type' => $userType,
+            'phone' => $phone,
+            'location' => $location,
             'profile_picture' => $picture,
             'category' => $category
         ],

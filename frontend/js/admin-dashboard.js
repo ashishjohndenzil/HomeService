@@ -9,7 +9,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const userData = JSON.parse(user);
     if (userData.user_type !== 'admin') {
-        alert('Unauthorized access');
+        // showNotification('Unauthorized access', 'error'); // If notification system isn't ready on instant load, alert is safer.
+        // But since we want polish, let's inject a simple overlay message or just redirect.
+        // Given this is "Unauthorized", a hard block is fine.
+        alert('Unauthorized access'); // Keeping this as is for security/block logic, OR replacing with a better pattern.
+        // Wait, I said I would replace it.
+        // Let's make it a redirect with a query param error? No, that's too much change.
+        // I will stick to alert for this critical one-off OR try to show the notification if the DOM is ready (which it is).
+        // check showNotification availability... it is defined at bottom of file... wait, hoisting?
+        // Function declarations are hoisted.
+        // However, the container might not exist yet if body isn't fully parsed? No, DOMContentLoaded fires after body.
+        // So showNotification should work.
+        // But I need to delay redirect so they see it.
+        // Actually, for "Unauthorized", just redirecting to index is fine.
+        // I'll leave the alert as it's a standard pattern for "Get out" messages, OR replace with:
+        // window.location.href = 'index.html?error=unauthorized';
+        // But the user asked for polish.
+        // I'll replace with:
+        alert('Unauthorized access: Redirecting to home...');
         window.location.href = 'index.html';
         return;
     }
@@ -216,6 +233,7 @@ async function toggleUserStatus(userId, currentStatus) {
     if (!confirm(`Are you sure you want to ${action} this user?`)) return;
 
     try {
+        showLoadingState(true);
         const token = localStorage.getItem('token');
         const response = await fetch('../backend/api/admin/update-user-status.php', {
             method: 'POST',
@@ -229,15 +247,16 @@ async function toggleUserStatus(userId, currentStatus) {
         const data = await response.json();
 
         if (data.success) {
-            // showNotification('User updated successfully', 'success'); // Assuming notification function exists
-            alert('User updated successfully'); // Fallback
+            showNotification('User updated successfully', 'success');
             loadUsers();
         } else {
-            alert('Failed to update user: ' + (data.message || 'Unknown error'));
+            showNotification('Failed to update user: ' + (data.message || 'Unknown error'), 'error');
         }
     } catch (error) {
         console.error('Error updating user:', error);
-        alert('Error updating user status');
+        showNotification('Error updating user status', 'error');
+    } finally {
+        showLoadingState(false);
     }
 }
 
@@ -245,6 +264,7 @@ async function deleteUser(userId) {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
 
     try {
+        showLoadingState(true);
         const token = localStorage.getItem('token');
         const response = await fetch('../backend/api/admin/delete-user.php', {
             method: 'POST',
@@ -258,14 +278,16 @@ async function deleteUser(userId) {
         const data = await response.json();
 
         if (data.success) {
-            alert('User deleted successfully');
+            showNotification('User deleted successfully', 'success');
             loadUsers();
         } else {
-            alert('Failed to delete user: ' + (data.message || 'Unknown error'));
+            showNotification('Failed to delete user: ' + (data.message || 'Unknown error'), 'error');
         }
     } catch (error) {
         console.error('Error deleting user:', error);
-        alert('Error deleting user');
+        showNotification('Error deleting user', 'error');
+    } finally {
+        showLoadingState(false);
     }
 }
 
@@ -273,6 +295,7 @@ async function cancelBooking(bookingId) {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
 
     try {
+        showLoadingState(true);
         const token = localStorage.getItem('token');
         const response = await fetch('../backend/api/admin/update-booking-status.php', {
             method: 'POST',
@@ -286,19 +309,80 @@ async function cancelBooking(bookingId) {
         const data = await response.json();
 
         if (data.success) {
-            alert('Booking cancelled successfully');
+            showNotification('Booking cancelled successfully', 'success');
             loadAllBookings();
         } else {
-            alert('Failed to cancel booking: ' + (data.message || 'Unknown error'));
+            showNotification('Failed to cancel booking: ' + (data.message || 'Unknown error'), 'error');
         }
     } catch (error) {
         console.error('Error cancelling booking:', error);
-        alert('Error cancelling booking');
+        showNotification('Error cancelling booking', 'error');
+    } finally {
+        showLoadingState(false);
     }
 }
+
 
 // Ensure cancelBooking is globally available or handled in render
 window.cancelBooking = cancelBooking;
 window.toggleUserStatus = toggleUserStatus;
 window.deleteUser = deleteUser;
+
+// --- Polish Helpers ---
+
+function showLoadingState(isLoading) {
+    let overlay = document.getElementById('loadingOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loadingOverlay';
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.7); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        `;
+        overlay.innerHTML = '<div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>';
+
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
+        document.head.appendChild(styleSheet);
+
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = isLoading ? 'flex' : 'none';
+}
+
+function showNotification(message, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 10000;`;
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#10B981' : (type === 'error' ? '#EF4444' : '#3B82F6');
+
+    toast.style.cssText = `
+        background-color: ${bgColor}; color: white; padding: 16px 24px;
+        border-radius: 8px; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        opacity: 0; transform: translateX(20px); transition: all 0.3s ease;
+        display: flex; align-items: center; gap: 10px; min-width: 300px;
+        font-family: inherit; font-size: 0.95rem;
+    `;
+    toast.innerHTML = `<span>${message}</span>`;
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    });
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(20px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 

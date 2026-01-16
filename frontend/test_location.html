@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Test (India Only)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .form-group {
+            position: relative;
+            max-width: 400px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        ul {
+            border: 1px solid #ccc;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: none;
+        }
+
+        li {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+
+        li:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Test Location Autocomplete (India Only)</h2>
+    <p>Type an address below (e.g., "Mumbai", "Delhi", "Pon"). results should be restricted to India.</p>
+
+    <div class="form-group">
+        <input type="text" id="location" placeholder="Start typing..." autocomplete="off">
+        <ul id="suggestions"></ul>
+    </div>
+
+    <script>
+        const input = document.getElementById('location');
+        const list = document.getElementById('suggestions');
+        let debounce;
+
+        input.addEventListener('input', function () {
+            const query = this.value;
+            clearTimeout(debounce);
+
+            if (query.length < 3) {
+                list.style.display = 'none';
+                return;
+            }
+
+            debounce = setTimeout(() => {
+                // EXACT URL from your project
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=in`;
+                console.log("Fetching: " + url);
+
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        list.innerHTML = '';
+                        if (data.length > 0) {
+                            data.forEach(item => {
+                                const li = document.createElement('li');
+                                li.textContent = item.display_name;
+                                list.appendChild(li);
+                            });
+                            list.style.display = 'block';
+                        } else {
+                            const li = document.createElement('li');
+                            li.textContent = "No results found in India";
+                            li.style.color = "red";
+                            list.appendChild(li);
+                            list.style.display = 'block';
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        list.innerHTML = '<li>Error fetching data</li>';
+                        list.style.display = 'block';
+                    });
+            }, 300);
+        });
+    </script>
+</body>
+
+</html>

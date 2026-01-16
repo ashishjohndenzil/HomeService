@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
     
     // Validate required fields
-    $required_fields = ['service_id', 'booking_date', 'booking_time', 'total_amount'];
+    $required_fields = ['service_id', 'booking_date', 'booking_time', 'total_amount', 'address'];
     foreach ($required_fields as $field) {
         if (empty($data[$field])) {
             http_response_code(400);
@@ -72,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $booking_time = $data['booking_time'];
     $total_amount = floatval($data['total_amount']);
     $description = $data['description'] ?? '';
+    $address = trim($data['address']);
     $provider_id = isset($data['provider_id']) ? intval($data['provider_id']) : null;
     
     // Validate date and time
@@ -98,15 +99,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if (!$provider_id) {
-            // Auto-assign a provider who offers this service
-            $stmt = $pdo->prepare("SELECT id FROM providers WHERE service_id = ? ORDER BY RAND() LIMIT 1");
+            // Smart Provider Matching: Prefer providers in the same location
+            // We'll extract the city/area from the address (simple string matching for now)
+            // Ideally, we'd use geospatial data, but text matching on the 'location' column is a good start.
+            
+            $stmt = $pdo->prepare("
+                SELECT p.id, u.location 
+                FROM providers p
+                JOIN users u ON p.user_id = u.id
+                WHERE p.service_id = ?
+            ");
             $stmt->execute([$service_id]);
-            if ($row = $stmt->fetch()) {
-                $provider_id = $row['id'];
-            } else {
+            $providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (empty($providers)) {
                 http_response_code(400);
                 echo json_encode(['error' => 'No providers available for this service']);
                 exit;
+            }
+
+            // Simple scoring system
+            $best_provider_id = null;
+            $max_score = -1;
+            
+            // Normalize booking address for comparison and split into parts
+            // e.g. "123 Main St, New York, NY" -> ["123 main st", "new york", "ny"]
+            $booking_parts = array_map('trim', explode(',', strtolower($address)));
+
+            foreach ($providers as $prov) {
+                $score = 0;
+                $prov_loc = strtolower($prov['location'] ?? '');
+                
+                if ($prov_loc) {
+                    // Split provider location too
+                    $prov_parts = array_map('trim', explode(',', $prov_loc));
+                    
+                    // Check if any significant part of provider location exists in booking address
+                    foreach ($prov_parts as $p_part) {
+                        if (empty($p_part)) continue;
+                        
+                        foreach ($booking_parts as $b_part) {
+                            // Match if one part contains the other
+                            // e.g. Provider: "New York" matches Booking: "New York"
+                            if (strpos($b_part, $p_part) !== false || strpos($p_part, $b_part) !== false) {
+                                $score += 10;
+                                break 2; // Found a match for this provider
+                            }
+                        }
+                    }
+                }
+                
+                // Add random factor to distribute load among matching providers
+                $score += mt_rand(0, 5);
+                
+                if ($score > $max_score) {
+                    $max_score = $score;
+                    $best_provider_id = $prov['id'];
+                }
+            }
+            
+            $provider_id = $best_provider_id;
+
+            if (!$provider_id) {
+                // Fallback: Pick random
+                 $provider_id = $providers[array_rand($providers)]['id'];
             }
         } else {
             // Validate provider offers this service
@@ -122,11 +178,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Create the booking
         $stmt = $pdo->prepare("
             INSERT INTO bookings 
-            (customer_id, provider_id, service_id, booking_date, booking_time, description, total_amount, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+            (customer_id, provider_id, service_id, booking_date, booking_time, description, address, total_amount, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
         ");
         
-        if ($stmt->execute([$user_id, $provider_id, $service_id, $booking_date, $booking_time, $description, $total_amount])) {
+        if ($stmt->execute([$user_id, $provider_id, $service_id, $booking_date, $booking_time, $description, $address, $total_amount])) {
             // Get the inserted booking ID
             $booking_id = $pdo->lastInsertId();
             echo json_encode([

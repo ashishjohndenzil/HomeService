@@ -66,37 +66,32 @@ function validateEmail(field) {
 }
 
 function validatePhone(field) {
-    console.log('validatePhone called with value:', field.value);
-
     const suggestion = createSuggestionElement(field);
-    const phone = field.value; // Don't trim here - let user type naturally
+    const phone = field.value.trim();
 
-    console.log('Phone value (no trim):', phone);
+    // Remove any non-numeric characters for validation
+    const cleanPhone = phone.replace(/\D/g, '');
 
-    if (!phone || phone.length === 0) {
+    if (!phone) {
         suggestion.textContent = 'Phone number is required';
         suggestion.className = 'validation-suggestion error-suggestion';
         field.style.borderColor = '#ef4444';
-        console.log('Empty phone field');
         return false;
     }
 
-    const phoneRegex = /^[\d\s\-\+\(\)]+$/;
-    if (!phoneRegex.test(phone)) {
-        suggestion.textContent = '⚠ Phone should only contain numbers, spaces, hyphens, plus, and parentheses';
+    if (/[^0-9]/.test(phone)) {
+        suggestion.textContent = 'Please enter only numbers';
         suggestion.className = 'validation-suggestion warning-suggestion';
         field.style.borderColor = '#f59e0b';
-        console.log('Invalid phone format:', phone);
         return false;
     }
 
-    // Count only digits for length check
-    const digitCount = phone.replace(/\D/g, '').length;
-
-    console.log('Digit count:', digitCount);
-
-    if (digitCount < 10) {
-        suggestion.textContent = `Phone number needs ${10 - digitCount} more digit(s)`;
+    if (cleanPhone.length !== 10) {
+        if (cleanPhone.length < 10) {
+            suggestion.textContent = `Phone number must be exactly 10 digits (you have ${cleanPhone.length})`;
+        } else {
+            suggestion.textContent = `Phone number cannot exceed 10 digits (you have ${cleanPhone.length})`;
+        }
         suggestion.className = 'validation-suggestion warning-suggestion';
         field.style.borderColor = '#f59e0b';
         return false;
@@ -170,6 +165,30 @@ function validateConfirmPassword(field) {
     return false;
 }
 
+function validateLocation(field) {
+    const suggestion = createSuggestionElement(field);
+    const location = field.value.trim();
+
+    if (!location) {
+        suggestion.textContent = 'Location is required';
+        suggestion.className = 'validation-suggestion error-suggestion';
+        field.style.borderColor = '#ef4444';
+        return false;
+    }
+
+    if (location.length < 3) {
+        suggestion.textContent = 'Please enter a clearer location (City, State/Area)';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+
+    suggestion.textContent = '✓ Location looks good';
+    suggestion.className = 'validation-suggestion success-suggestion';
+    field.style.borderColor = '#10b981';
+    return true;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const registerForm = document.getElementById('registerForm');
     const errorMessage = document.getElementById('errorMessage');
@@ -188,16 +207,26 @@ document.addEventListener('DOMContentLoaded', function () {
         emailInput.addEventListener('blur', function () { validateEmail(this); });
     }
 
-    const phoneInput = document.getElementById('phone');
-    if (phoneInput) {
-        // Prevent non-numeric characters from being typed
-        phoneInput.addEventListener('input', function (e) {
-            // Only allow digits, spaces, hyphens, plus, and parentheses
-            this.value = this.value.replace(/[^0-9\s\-\+\(\)]/g, '');
-            validatePhone(this);
-        });
-        phoneInput.addEventListener('blur', function () { validatePhone(this); });
-    }
+    const phoneFields = ['phone', 'initial_phone', 'googlePhone'];
+
+    phoneFields.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            // Strictly allow only numbers and max 10 digits
+            input.addEventListener('input', function (e) {
+                // Remove any non-numeric characters immediately
+                this.value = this.value.replace(/\D/g, '');
+
+                // Limit to 10 digits
+                if (this.value.length > 10) {
+                    this.value = this.value.slice(0, 10);
+                }
+
+                validatePhone(this);
+            });
+            input.addEventListener('blur', function () { validatePhone(this); });
+        }
+    });
 
     const passwordInput = document.getElementById('password');
     if (passwordInput) {
@@ -210,6 +239,15 @@ document.addEventListener('DOMContentLoaded', function () {
         confirmPasswordInput.addEventListener('input', function () { validateConfirmPassword(this); });
         confirmPasswordInput.addEventListener('blur', function () { validateConfirmPassword(this); });
     }
+
+    const locationFields = ['location', 'initial_location'];
+    locationFields.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('input', function () { validateLocation(this); });
+            input.addEventListener('blur', function () { validateLocation(this); });
+        }
+    });
 
     registerForm.addEventListener('submit', async function (e) {
         e.preventDefault();
@@ -224,6 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const fullName = document.getElementById('fullName').value.trim();
         const email = document.getElementById('email').value.trim();
         const phone = document.getElementById('phone').value.trim();
+        const location = document.getElementById('location').value.trim();
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
 
@@ -284,11 +323,17 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        if (!location) {
+            showError('Please enter your location');
+            return;
+        }
+
         // Prepare data for API
         const formData = {
             fullName: fullName,
             email: email,
             phone: phone,
+            location: location,
             password: password,
             userType: userType
         };

@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fullName = trim($data['fullName']);
     $email = trim($data['email']);
     $phone = trim($data['phone']);
+    $location = isset($data['location']) ? trim($data['location']) : '';
     $password = $data['password'];
     $userType = $data['userType'];
     $serviceId = isset($data['serviceId']) ? intval($data['serviceId']) : null;
@@ -68,10 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         // Insert user into database
-        $stmt = $pdo->prepare("INSERT INTO users (full_name, email, phone, password, user_type, created_at) 
-                               VALUES (?, ?, ?, ?, ?, NOW())");
+        $stmt = $pdo->prepare("INSERT INTO users (full_name, email, phone, location, password, user_type, created_at) 
+                               VALUES (?, ?, ?, ?, ?, ?, NOW())");
         
-        if ($stmt->execute([$fullName, $email, $phone, $hashedPassword, $userType])) {
+        if ($stmt->execute([$fullName, $email, $phone, $location, $hashedPassword, $userType])) {
             $userId = $pdo->lastInsertId();
             
             // Generate session token for auto-login
@@ -102,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Fetch the complete user data with service info
                     $userQuery = $pdo->prepare("
-                        SELECT u.id, u.full_name, u.email, u.phone, u.user_type,
+                        SELECT u.id, u.full_name, u.email, u.phone, u.location, u.user_type,
                                s.id as service_id, s.name as service_name, s.category
                         FROM users u
                         LEFT JOIN providers p ON u.id = p.user_id
@@ -123,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } else {
                 // Fetch basic user data for customers
-                $userQuery = $pdo->prepare("SELECT id, full_name, email, phone, user_type FROM users WHERE id = ?");
+                $userQuery = $pdo->prepare("SELECT id, full_name, email, phone, location, user_type FROM users WHERE id = ?");
                 $userQuery->execute([$userId]);
                 $userData = $userQuery->fetch();
 

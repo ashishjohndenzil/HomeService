@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         // Get user from database
-        $stmt = $pdo->prepare("SELECT id, full_name, email, phone, password, user_type FROM users WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT id, full_name, email, phone, location, password, user_type FROM users WHERE email = ?");
         $stmt->execute([$email]);
         
         if ($stmt->rowCount() === 0) {
@@ -79,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'full_name' => $user['full_name'],
                 'email' => $user['email'],
                 'phone' => $user['phone'],
+                'location' => $user['location'],
                 'user_type' => $user['user_type'],
                 'category' => $category
             ];

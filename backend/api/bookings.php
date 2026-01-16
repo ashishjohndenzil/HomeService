@@ -81,12 +81,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     b.created_at,
                     s.name as service_name,
                     s.category as service_category,
+
                     u.full_name as provider_name,
-                    u.email as provider_email
+                    u.email as provider_email,
+                    b.address as customer_location,
+                    r.rating as user_rating,
+                    r.comment as user_review
                 FROM bookings b
                 JOIN services s ON b.service_id = s.id
                 JOIN providers p ON b.provider_id = p.id
                 JOIN users u ON p.user_id = u.id
+                JOIN users cust ON b.customer_id = cust.id
+                LEFT JOIN reviews r ON b.id = r.booking_id
                 WHERE b.customer_id = ?
             ";
             
@@ -98,6 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
             
             $query .= " ORDER BY b.booking_date DESC, b.booking_time DESC";
+
             
             $stmt = $pdo->prepare($query);
             $stmt->execute($params);
@@ -124,7 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     s.category as service_category,
                     u.full_name as customer_name,
                     u.email as customer_email,
-                    u.phone as customer_phone
+                    u.phone as customer_phone,
+                    b.address as customer_location
                 FROM bookings b
                 JOIN services s ON b.service_id = s.id
                 JOIN providers p ON b.provider_id = p.id
@@ -139,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $params[] = $status;
             }
             
-            $query .= " ORDER BY b.booking_date DESC, b.booking_time DESC";
+
             
             $stmt = $pdo->prepare($query);
             $stmt->execute($params);

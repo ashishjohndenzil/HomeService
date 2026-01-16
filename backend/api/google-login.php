@@ -63,38 +63,8 @@ try {
             'token' => $token
         ]);
     } else {
-        // New user - create account as customer by default
-        $stmt = $pdo->prepare("
-            INSERT INTO users (full_name, email, password, user_type, phone, auth_provider, created_at, updated_at) 
-            VALUES (?, ?, ?, 'customer', '', 'google', NOW(), NOW())
-        ");
-        
-        // Use a random password since they're using Google auth
-        $randomPassword = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
-        if (!$stmt->execute([$name, $email, $randomPassword])) {
-            handleError('Failed to create account');
-        }
-        
-        $userId = $pdo->lastInsertId();
-        $token = bin2hex(random_bytes(32));
-        
-        // Store session token
-        $tokenStmt = $pdo->prepare("INSERT INTO user_sessions (user_id, token, created_at, expires_at) 
-                                    VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))");
-        $tokenStmt->execute([$userId, $token]);
-        
-        sendResponse([
-            'success' => true,
-            'message' => 'Account created successfully',
-            'user' => [
-                'id' => $userId,
-                'full_name' => $name,
-                'email' => $email,
-                'user_type' => 'customer',
-                'profile_picture' => $picture
-            ],
-            'token' => $token
-        ]);
+        // New user - Prevent auto-creation and ask to register first (to capture phone/role)
+        handleError('Account not found. Please register first to set up your profile.', 404);
     }
     
 } catch (PDOException $e) {

@@ -37,36 +37,23 @@ try {
     $data = json_decode(file_get_contents("php://input"), true);
     
     // Validation
-    if (empty($data['service_id']) || !isset($data['hourly_rate']) || !isset($data['experience_years'])) {
-        die(json_encode(['success' => false, 'message' => 'All fields are required']));
+    if (empty($data['full_name']) || empty($data['phone'])) {
+        die(json_encode(['success' => false, 'message' => 'Name and Phone are required']));
     }
     
-    // Check if provider already has this service
-    $check = $pdo->prepare("SELECT id FROM providers WHERE user_id = ? AND service_id = ?");
-    $check->execute([$user_id, $data['service_id']]);
-    
-    if ($check->rowCount() > 0) {
-        die(json_encode(['success' => false, 'message' => 'You already offer this service']));
-    }
-    
-    // Insert new service
-    $insert = $pdo->prepare("
-        INSERT INTO providers (user_id, service_id, experience_years, hourly_rate, bio, is_verified, created_at)
-        VALUES (?, ?, ?, ?, ?, 0, NOW())
+    $location = isset($data['location']) ? trim($data['location']) : '';
+
+    // Update user
+    $update = $pdo->prepare("
+        UPDATE users 
+        SET full_name = ?, phone = ?, location = ?, updated_at = NOW()
+        WHERE id = ?
     ");
     
-    $bio = isset($data['description']) ? $data['description'] : 'Professional service provider';
-    
-    if ($insert->execute([
-        $user_id, 
-        $data['service_id'], 
-        $data['experience_years'], 
-        $data['hourly_rate'],
-        $bio
-    ])) {
-        echo json_encode(['success' => true, 'message' => 'Service added successfully']);
+    if ($update->execute([$data['full_name'], $data['phone'], $location, $user_id])) {
+        echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to add service']);
+        echo json_encode(['success' => false, 'message' => 'Failed to update profile']);
     }
 
 } catch (PDOException $e) {

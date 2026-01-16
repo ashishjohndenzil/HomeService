@@ -31,7 +31,8 @@ if ($method === 'GET') {
              FROM providers p
              JOIN users u ON p.user_id = u.id
              JOIN services s ON p.service_id = s.id
-             WHERE p.service_id = ?";
+             WHERE p.service_id = ? AND u.is_active = 1
+             ORDER BY p.is_verified DESC, p.rating DESC, p.hourly_rate ASC";
     
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$service_id]);

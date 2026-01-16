@@ -22,8 +22,11 @@ if (!isset($data['user_id']) || !isset($data['is_active'])) {
 }
 
 try {
+    // Map string status to TINYINT
+    $isActive = ($data['is_active'] === 'active') ? 1 : 0;
+    
     $stmt = $pdo->prepare("UPDATE users SET is_active = ? WHERE id = ?");
-    $result = $stmt->execute([$data['is_active'], $data['user_id']]);
+    $result = $stmt->execute([$isActive, $data['user_id']]);
 
     if ($result) {
         echo json_encode(['success' => true, 'message' => 'User status updated']);

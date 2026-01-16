@@ -23,16 +23,22 @@ function createBookingModal() {
                             </select>
                         </div>
 
-                        <!-- Provider selection removed as per user request -->
-
+                        <div class="form-group" style="position: relative;">
+                            <label for="bookingAddress">Service Address</label>
+                            <textarea id="bookingAddress" name="address" placeholder="Start typing your address..." rows="3" required autocomplete="off"></textarea>
+                            <ul id="bookingAddressSuggestions" class="suggestions-list" style="display: none; position: absolute; transform: translateY(-5px); width: 100%; left: 0; background: white; border: 1px solid #ddd; max-height: 150px; overflow-y: auto; z-index: 2000; list-style: none; padding: 0; margin: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></ul>
+                        </div>
+                        
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="bookingDate">Date</label>
                                 <input type="date" id="bookingDate" name="booking_date" required>
                             </div>
                             <div class="form-group">
-                                <label for="bookingTime">Time</label>
-                                <input type="time" id="bookingTime" name="booking_time" required>
+                                <label for="bookingTime">Time Slot</label>
+                                <select id="bookingTime" name="booking_time" required>
+                                    <option value="">Select a time...</option>
+                                </select>
                             </div>
                         </div>
 
@@ -130,7 +136,58 @@ function setupBookingForm() {
         }
     }
 
+    function updateTimeSlots() {
+        const dateVal = document.getElementById('bookingDate').value;
+        const timeSelect = document.getElementById('bookingTime');
+
+        if (!dateVal) {
+            timeSelect.innerHTML = '<option value="">Select a time...</option>';
+            return;
+        }
+
+        timeSelect.innerHTML = '<option value="">Select a time...</option>';
+
+        const selectedDate = new Date(dateVal);
+        const now = new Date();
+        const isToday = selectedDate.toDateString() === now.toDateString();
+
+        // Generate slots from 8 AM to 8 PM (20:00)
+        for (let hour = 8; hour <= 20; hour++) {
+            // Filter past hours if today
+            if (isToday && hour <= now.getHours() + 1) {
+                continue; // Must be at least 1 hour in advance
+            }
+
+            const timeString = `${hour.toString().padStart(2, '0')}:00`;
+            const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+
+            const option = document.createElement('option');
+            option.value = timeString;
+            option.textContent = displayTime;
+            timeSelect.appendChild(option);
+        }
+
+        if (timeSelect.options.length <= 1) {
+            const option = document.createElement('option');
+            option.textContent = "No slots available today";
+            option.disabled = true;
+            timeSelect.appendChild(option);
+        }
+    }
+
     if (form) {
+        // Date change listener
+        const dateInput = document.getElementById('bookingDate');
+        if (dateInput) {
+            dateInput.addEventListener('change', updateTimeSlots);
+            // Also run on init to set initial state
+            updateTimeSlots();
+        }
+
         if (serviceSelect) {
             serviceSelect.addEventListener('change', calculateTotal);
         }
@@ -138,12 +195,65 @@ function setupBookingForm() {
             durationInput.addEventListener('input', calculateTotal);
         }
 
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
-            submitBooking();
+        // Address Autocomplete Logic
+        const addrInput = document.getElementById('bookingAddress');
+        const addrList = document.getElementById('bookingAddressSuggestions');
+        let addrDebounce;
+
+        if (addrInput && addrList) {
+            addrInput.addEventListener('input', function () {
+                const query = this.value;
+                clearTimeout(addrDebounce);
+
+                if (query.length < 3) {
+                    addrList.style.display = 'none';
+                    return;
+                }
+
+                addrDebounce = setTimeout(() => {
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=in`)
+                        .then(res => res.json())
+                        .then(data => {
+                            addrList.innerHTML = '';
+                            if (data.length > 0) {
+                                data.forEach(item => {
+                                    const li = document.createElement('li');
+                                    li.textContent = item.display_name;
+                                    li.style.padding = '10px';
+                                    li.style.cursor = 'pointer';
+                                    li.style.borderBottom = '1px solid #eee';
+                                    li.style.fontSize = '0.9rem';
+                                    li.addEventListener('mouseenter', () => li.style.backgroundColor = '#f0f0f0');
+                                    li.addEventListener('mouseleave', () => li.style.backgroundColor = 'white');
+
+                                    li.addEventListener('click', () => {
+                                        addrInput.value = item.display_name;
+                                        addrList.style.display = 'none';
+                                    });
+                                    addrList.appendChild(li);
+                                });
+                                addrList.style.display = 'block';
+                            } else {
+                                addrList.style.display = 'none';
+                            }
+                        })
+                        .catch(err => console.error('Error fetching address:', err));
+                }, 300);
+            });
+        }      // Hide on click outside
+        document.addEventListener('click', function (e) {
+            if (e.target !== addrInput && e.target !== addrList) {
+                addrList.style.display = 'none';
+            }
         });
     }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        submitBooking();
+    });
 }
+
 
 // Open booking modal with optional service and provider preset
 async function openBookingModal(serviceId = null, providerId = null) {
@@ -158,7 +268,7 @@ async function openBookingModal(serviceId = null, providerId = null) {
 
     const userData = JSON.parse(user);
     if (userData.user_type === 'provider') {
-        alert('Service providers cannot book services.');
+        showBookingNotification('Service providers cannot book services.', 'error');
         return;
     }
 
@@ -169,12 +279,24 @@ async function openBookingModal(serviceId = null, providerId = null) {
         modal.classList.add('show');
     }
 
-    // Set minimum date to today
-    const today = new Date().toISOString().split('T')[0];
+    // Set minimum date to today (Local Time)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+
     const dateInput = document.getElementById('bookingDate');
     if (dateInput) {
         dateInput.setAttribute('min', today);
         dateInput.value = today;
+        dateInput.dispatchEvent(new Event('change'));
+    }
+
+    // Pre-fill address if available in user profile
+    const addressInput = document.getElementById('bookingAddress');
+    if (addressInput && userData.location) {
+        addressInput.value = userData.location;
     }
 
     // Load services
@@ -200,13 +322,57 @@ function closeBookingModal() {
     }
 }
 
+
+// --- Helper Functions for Polish ---
+function showBookingNotification(message, type = 'info') {
+    // Check if global showNotification exists (from dashboard.js or admin-dashboard.js)
+    if (typeof window.showNotification === 'function') {
+        window.showNotification(message, type);
+        return;
+    }
+
+    // Fallback implementation if specific dashboard JS isn't loaded
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 10000;`;
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#10B981' : (type === 'error' ? '#EF4444' : '#3B82F6');
+
+    toast.style.cssText = `
+        background-color: ${bgColor}; color: white; padding: 16px 24px;
+        border-radius: 8px; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        opacity: 0; transform: translateX(20px); transition: all 0.3s ease;
+        display: flex; align-items: center; gap: 10px; min-width: 300px;
+        font-family: inherit; font-size: 0.95rem;
+    `;
+    toast.innerHTML = `<span>${message}</span>`;
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    });
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(20px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 // Submit booking
 function submitBooking() {
     const token = localStorage.getItem('token');
 
     if (!token) {
-        alert('Session expired. Please login again.');
-        window.location.href = 'login.html';
+        showBookingNotification('Session expired. Please login again.', 'error');
+        setTimeout(() => window.location.href = 'login.html', 1500);
         return;
     }
 
@@ -218,12 +384,37 @@ function submitBooking() {
         booking_date: formData.get('booking_date'),
         booking_time: formData.get('booking_time'),
         description: formData.get('description'),
+        address: formData.get('address'),
         total_amount: parseFloat(formData.get('total_amount'))
     };
 
     // Validate
-    if (!bookingData.service_id || !bookingData.booking_date || !bookingData.booking_time || !bookingData.total_amount) {
-        alert('Please fill in all required fields');
+    if (!bookingData.service_id || !bookingData.booking_date || !bookingData.booking_time || !bookingData.total_amount || !bookingData.address) {
+        showBookingNotification('Please fill in all required fields, including Address', 'error');
+        return;
+    }
+
+    // Time Validation
+    const now = new Date();
+    const selectedDate = new Date(bookingData.booking_date + 'T' + bookingData.booking_time);
+    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+
+    // 1. Past Check
+    if (selectedDate < now) {
+        showBookingNotification('Please select a future date and time', 'error');
+        return;
+    }
+
+    // 2. 1-Hour Minimum Notice
+    if (selectedDate < oneHourLater) {
+        showBookingNotification('Please book at least 1 hour in advance.', 'error');
+        return;
+    }
+
+    // 3. Business Hours (08:00 - 20:00)
+    const hours = selectedDate.getHours();
+    if (hours < 8 || hours >= 20) {
+        showBookingNotification('Service hours are 08:00 AM to 08:00 PM', 'error');
         return;
     }
 
@@ -242,16 +433,15 @@ function submitBooking() {
         body: JSON.stringify(bookingData)
     })
         .then(async response => {
-            const data = await response.json().catch(() => ({})); // Handle non-JSON responses gracefully
+            const data = await response.json().catch(() => ({}));
             if (!response.ok) {
-                // If response is not ok, throw the error from the response body or a default message
                 throw new Error(data.error || 'Failed to create booking (Status: ' + response.status + ')');
             }
             return data;
         })
         .then(data => {
             if (data.success) {
-                alert('✅ Booking created successfully! Your booking ID is: ' + data.booking_id);
+                showBookingNotification('Booking created successfully! ID: ' + data.booking_id, 'success');
                 closeBookingModal();
                 form.reset();
 
@@ -260,12 +450,12 @@ function submitBooking() {
                     loadBookings();
                 }
             } else {
-                alert('❌ Error: ' + (data.error || 'Failed to create booking'));
+                showBookingNotification('Error: ' + (data.error || 'Failed to create booking'), 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('❌ ' + error.message);
+            showBookingNotification(error.message, 'error');
         })
         .finally(() => {
             submitBtn.textContent = originalText;

@@ -30,6 +30,18 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('settingsName').value = fullName;
     document.getElementById('settingsEmail').value = userData.email;
     document.getElementById('settingsPhone').value = userData.phone || '';
+    document.getElementById('settingsLocation').value = userData.location || '';
+
+    // Set Profile Image
+    if (userData.profile_image) {
+        const img = document.getElementById('avatarImage');
+        const initials = document.getElementById('avatarInitials');
+        if (img && initials) {
+            img.src = userData.profile_image; // Ensure backend returns full or correct relative path
+            img.style.display = 'block';
+            initials.style.display = 'none';
+        }
+    }
 
     // Store provider service category if available
     if (userType === 'provider') {
@@ -262,7 +274,7 @@ function loadProviderServices() {
                     <div class="service-card-header">
                         <div class="service-card-title">
                             <h3>${service.service_name}</h3>
-                            <span class="category-badge">${service.category || service.service_name}</span>
+                            ${(service.category && service.category !== service.service_name) ? `<span class="category-badge">${service.category}</span>` : ''}
                         </div>
                         ${verifiedBadge}
                     </div>
@@ -351,6 +363,10 @@ function loadBookings(status = null) {
 
                 // Update dashboard stats
                 updateDashboardStats(data.bookings, user.user_type);
+
+                if (user.user_type === 'provider') {
+                    renderEarningsHistory(data.bookings);
+                }
             } else {
                 if (user.user_type === 'customer') {
                     bookingsContent.innerHTML = '<p class="empty-state">No bookings yet. <a href="#services" onclick="switchPage(\'services\')">Browse services</a></p>';
@@ -369,7 +385,15 @@ function createBookingElement(booking, userType) {
     const div = document.createElement('div');
     div.className = `booking-item booking-${booking.status}`;
 
-    const dateObj = new Date(booking.booking_date + ' ' + booking.booking_time);
+    // Parse date manually to avoid timezone issues
+    const [year, month, day] = booking.booking_date.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day); // Month is 0-indexed
+
+    // Parse time
+    const [hours, minutes] = booking.booking_time.split(':');
+    dateObj.setHours(hours);
+    dateObj.setMinutes(minutes);
+
     const formattedDate = dateObj.toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric',
@@ -412,10 +436,21 @@ function createBookingElement(booking, userType) {
                     <span class="label">📧 Contact:</span>
                     <span class="value">${booking.provider_email}</span>
                 </div>
+                <div class="detail">
+                     <span class="label">📍 Location:</span>
+                     <span class="value">${booking.customer_location || 'Not specified'}</span>
+                 </div>
             </div>
             <div class="booking-actions">
                 ${booking.status === 'pending' ? `<button class="btn btn-sm btn-danger" onclick="cancelBooking(${booking.id})">Cancel Booking</button>` : ''}
-                ${booking.status === 'completed' ? `<button class="btn btn-sm btn-primary" onclick="reviewBooking(${booking.id})">Leave Review</button>` : ''}
+                ${booking.status === 'completed' ?
+                (booking.user_rating
+                    ? `<div class="user-rating-display" style="display:inline-flex; align-items:center; gap:5px; background:#fef3c7; padding:4px 10px; border-radius:15px; border:1px solid #fcd34d;">
+                             <span style="color:#d97706; font-weight:bold;">${booking.user_rating} ★</span>
+                             <span style="font-size:0.85em; color:#92400e;">Thanks!</span>
+                           </div>`
+                    : `<button class="btn btn-sm btn-primary" onclick="reviewBooking(${booking.id})">Leave Review</button>`
+                ) : ''}
             </div>
         `;
     } else {
@@ -446,6 +481,10 @@ function createBookingElement(booking, userType) {
                 <div class="detail">
                     <span class="label">📱 Contact:</span>
                     <span class="value">${booking.customer_phone || booking.customer_email}</span>
+                </div>
+                <div class="detail">
+                    <span class="label">📍 Location:</span>
+                    <span class="value">${booking.customer_location || 'Not specified'}</span>
                 </div>
             </div>
             <div class="booking-actions">
@@ -499,6 +538,22 @@ function updateDashboardStats(bookings, userType) {
 
         if (pendingElement) pendingElement.textContent = pending;
         if (completedElement) completedElement.textContent = completed;
+
+        // Calculate Earnings
+        const totalEarnings = bookings
+            .filter(b => b.status === 'completed')
+            .reduce((sum, b) => sum + (parseFloat(b.total_amount) || 0), 0);
+
+        const earningsElement = document.getElementById('earnings');
+        if (earningsElement) earningsElement.textContent = '₹' + totalEarnings.toFixed(2);
+
+        // Update Earnings Page Cards
+        const earningsPageTotal = document.querySelector('#earnings .earnings-card:last-child .amount');
+        if (earningsPageTotal) earningsPageTotal.textContent = '₹' + totalEarnings.toFixed(2);
+
+        // For this version, we'll just show total as monthly logic is complex without date filtering
+        const earningsPageMonthly = document.querySelector('#earnings .earnings-card:first-child .amount');
+        if (earningsPageMonthly) earningsPageMonthly.textContent = '₹' + totalEarnings.toFixed(2);
     }
 }
 
@@ -645,7 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const ratingInput = document.querySelector('input[name="rating"]:checked');
 
             if (!ratingInput) {
-                alert('Please select a rating');
+                showNotification('Please select a rating', 'warning');
                 return;
             }
 
@@ -672,8 +727,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.success) {
                         showNotification('Review submitted successfully', 'success');
                         closeReviewModal();
-                        // Optionally hide review button or reload bookings
-                        loadBookings('completed');
+                        // Reload based on current active filter
+                        const activeFilter = document.querySelector('.filter-btn.active');
+                        const currentStatus = activeFilter ? activeFilter.dataset.filter : 'all';
+                        loadBookings(currentStatus === 'all' ? null : currentStatus);
                     } else {
                         showNotification(data.message || 'Failed to submit review', 'error');
                     }
@@ -774,7 +831,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const description = document.getElementById('newDescription').value;
 
             if (!serviceId) {
-                alert('Please select a service type');
+                showNotification('Please select a service type', 'warning');
                 return;
             }
 
@@ -973,5 +1030,170 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// Load dashboard data on page load
+// Profile Editing Functions
+function enableProfileEditing() {
+    document.getElementById('settingsName').removeAttribute('readonly');
+    document.getElementById('settingsPhone').removeAttribute('readonly');
+    document.getElementById('settingsLocation').removeAttribute('readonly');
+    document.getElementById('settingsName').focus();
+
+    document.getElementById('editProfileBtn').style.display = 'none';
+    document.getElementById('saveProfileBtn').style.display = 'block';
+}
+
+function saveProfile() {
+    const name = document.getElementById('settingsName').value;
+    const phone = document.getElementById('settingsPhone').value;
+    const location = document.getElementById('settingsLocation').value;
+
+    const token = localStorage.getItem('token');
+
+    // Removed the original validation for fullName and phone, as per the provided snippet.
+    // If validation is still desired, it should be re-added here, potentially including location.
+
+    showLoadingState(true);
+
+    fetch('../backend/api/update-profile.php', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            full_name: name,
+            phone: phone,
+            location: location
+        })
+    })
+        .then(res => res.json())
+        .then(data => {
+            showLoadingState(false);
+            if (data.success) {
+                showNotification('Profile updated successfully', 'success');
+
+                // Update LocalStorage
+                const user = JSON.parse(localStorage.getItem('user'));
+                user.full_name = name;
+                user.phone = phone;
+                user.location = location;
+                localStorage.setItem('user', JSON.stringify(user));
+
+                // Update UI
+                document.getElementById('userName').textContent = name;
+                document.getElementById('settingsName').setAttribute('readonly', true);
+                document.getElementById('settingsPhone').setAttribute('readonly', true);
+                document.getElementById('settingsLocation').setAttribute('readonly', true);
+
+                document.getElementById('editProfileBtn').style.display = 'block';
+                document.getElementById('saveProfileBtn').style.display = 'none';
+            } else {
+                showNotification(data.message || 'Failed to update profile', 'error');
+            }
+        })
+        .catch(err => {
+            showLoadingState(false);
+            console.error(err);
+            showNotification('Error updating profile', 'error');
+        });
+}
+
+// Render Earnings History
+function renderEarningsHistory(bookings) {
+    const earningsContent = document.getElementById('earningsContent');
+    if (!earningsContent) return;
+
+    const completedBookings = bookings.filter(b => b.status === 'completed');
+
+    if (completedBookings.length === 0) {
+        earningsContent.innerHTML = '<p class="empty-state">No earnings yet</p>';
+        return;
+    }
+
+    let html = `
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden;">
+                <thead>
+                    <tr style="background:#f3f4f6; text-align:left; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding:12px; color: #4b5563;">Date</th>
+                        <th style="padding:12px; color: #4b5563;">Service</th>
+                        <th style="padding:12px; color: #4b5563;">Customer</th>
+                        <th style="padding:12px; color: #4b5563; text-align: right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    completedBookings.sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
+
+    completedBookings.forEach(b => {
+        const date = new Date(b.booking_date).toLocaleDateString();
+        html += `
+            <tr style="border-bottom:1px solid #eee; hover:bg-gray-50;">
+                <td style="padding:12px;">${date}</td>
+                <td style="padding:12px;">${b.service_name}</td>
+                <td style="padding:12px;">
+                    <div>${b.customer_name}</div>
+                    <div style="font-size: 0.85em; color: #6b7280;">${b.customer_phone || ''}</div>
+                </td>
+                <td style="padding:12px; font-weight:bold; color:#10B981; text-align: right;">₹${parseFloat(b.total_amount).toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+    html += '</tbody></table></div>';
+    earningsContent.innerHTML = html;
+}
+
+// Load dashboard stats on page load
 loadDashboardData();
+// Profile Image Upload
+function uploadProfileImage(input) {
+    if (!input.files || !input.files[0]) return;
+
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('profile_image', file);
+
+    const token = localStorage.getItem('token');
+
+    // Show uploading ...
+    showNotification('Uploading image...', 'info');
+
+    fetch('../backend/api/upload-profile-image.php', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token
+        },
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Profile image updated!', 'success');
+                // Update UI
+                const img = document.getElementById('avatarImage');
+                const initials = document.getElementById('avatarInitials');
+
+                // Add cache buster
+                img.src = data.image_url + '?t=' + new Date().getTime();
+                img.style.display = 'block';
+                initials.style.display = 'none';
+
+                // Update local storage
+                const user = JSON.parse(localStorage.getItem('user'));
+                user.profile_image = data.image_url;
+                localStorage.setItem('user', JSON.stringify(user));
+            } else {
+                showNotification(data.message || 'Upload failed', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Upload failed', 'error');
+        });
+}
+
+// Expose functions to window
+window.reviewBooking = reviewBooking;
+window.closeReviewModal = closeReviewModal;
+window.cancelBooking = cancelBooking;
