@@ -26,7 +26,7 @@ function createBookingModal() {
                         <div class="form-group" style="position: relative;">
                             <label for="bookingAddress">Service Address</label>
                             <textarea id="bookingAddress" name="address" placeholder="Start typing your address..." rows="3" required autocomplete="off"></textarea>
-                            <ul id="bookingAddressSuggestions" class="suggestions-list" style="display: none; position: absolute; transform: translateY(-5px); width: 100%; left: 0; background: white; border: 1px solid #ddd; max-height: 150px; overflow-y: auto; z-index: 2000; list-style: none; padding: 0; margin: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></ul>
+                            <ul id="bookingAddressSuggestions" class="suggestions-list" style="display: none; position: absolute; top: 100%; width: 100%; left: 0; background: white; border: 1px solid #ddd; max-height: 150px; overflow-y: auto; z-index: 2000; list-style: none; padding: 0; margin: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></ul>
                         </div>
                         
                         <div class="form-row">
@@ -195,57 +195,12 @@ function setupBookingForm() {
             durationInput.addEventListener('input', calculateTotal);
         }
 
-        // Address Autocomplete Logic
-        const addrInput = document.getElementById('bookingAddress');
-        const addrList = document.getElementById('bookingAddressSuggestions');
-        let addrDebounce;
-
-        if (addrInput && addrList) {
-            addrInput.addEventListener('input', function () {
-                const query = this.value;
-                clearTimeout(addrDebounce);
-
-                if (query.length < 3) {
-                    addrList.style.display = 'none';
-                    return;
-                }
-
-                addrDebounce = setTimeout(() => {
-                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=in`)
-                        .then(res => res.json())
-                        .then(data => {
-                            addrList.innerHTML = '';
-                            if (data.length > 0) {
-                                data.forEach(item => {
-                                    const li = document.createElement('li');
-                                    li.textContent = item.display_name;
-                                    li.style.padding = '10px';
-                                    li.style.cursor = 'pointer';
-                                    li.style.borderBottom = '1px solid #eee';
-                                    li.style.fontSize = '0.9rem';
-                                    li.addEventListener('mouseenter', () => li.style.backgroundColor = '#f0f0f0');
-                                    li.addEventListener('mouseleave', () => li.style.backgroundColor = 'white');
-
-                                    li.addEventListener('click', () => {
-                                        addrInput.value = item.display_name;
-                                        addrList.style.display = 'none';
-                                    });
-                                    addrList.appendChild(li);
-                                });
-                                addrList.style.display = 'block';
-                            } else {
-                                addrList.style.display = 'none';
-                            }
-                        })
-                        .catch(err => console.error('Error fetching address:', err));
-                }, 300);
-            });
-        }      // Hide on click outside
-        document.addEventListener('click', function (e) {
-            if (e.target !== addrInput && e.target !== addrList) {
-                addrList.style.display = 'none';
-            }
-        });
+        // Address Autocomplete Logic using shared script
+        if (typeof window.setupAddressAutocomplete === 'function') {
+            setupAddressAutocomplete('bookingAddress', 'bookingAddressSuggestions');
+        } else {
+            console.warn('location-autocomplete.js not loaded. Address suggestions disabled.');
+        }
     }
 
     form.addEventListener('submit', function (e) {

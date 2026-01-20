@@ -445,10 +445,12 @@ function createBookingElement(booking, userType) {
                 ${booking.status === 'pending' ? `<button class="btn btn-sm btn-danger" onclick="cancelBooking(${booking.id})">Cancel Booking</button>` : ''}
                 ${booking.status === 'completed' ?
                 (booking.user_rating
-                    ? `<div class="user-rating-display" style="display:inline-flex; align-items:center; gap:5px; background:#fef3c7; padding:4px 10px; border-radius:15px; border:1px solid #fcd34d;">
-                             <span style="color:#d97706; font-weight:bold;">${booking.user_rating} ★</span>
-                             <span style="font-size:0.85em; color:#92400e;">Thanks!</span>
-                           </div>`
+                    ? `<div style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%;">
+                           <div class="user-rating-display" style="display:inline-flex; align-items:center; gap:5px; background:#fef3c7; padding:4px 10px; border-radius:15px; border:1px solid #fcd34d; flex-shrink: 0;">
+                               <span style="color:#d97706; font-weight:bold;">${booking.user_rating} ★</span>
+                           </div>
+                           ${booking.user_review ? `<div style="color: #4b5563; font-style: italic; font-size: 0.9rem; max-width: 400px; text-align: left;">"${booking.user_review}"</div>` : ''}
+                       </div>`
                     : `<button class="btn btn-sm btn-primary" onclick="reviewBooking(${booking.id})">Leave Review</button>`
                 ) : ''}
             </div>
@@ -494,6 +496,14 @@ function createBookingElement(booking, userType) {
                 ` : ''}
                 ${booking.status === 'confirmed' ? `
                     <button class="btn btn-sm btn-success" onclick="updateBookingStatus(${booking.id}, 'completed')">Mark Complete</button>
+                ` : ''}
+                ${booking.status === 'completed' && booking.user_rating ? `
+                    <div style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%;">
+                        <div class="user-rating-display" style="display:inline-flex; align-items:center; gap:5px; background:#fef3c7; padding:4px 10px; border-radius:15px; border:1px solid #fcd34d; flex-shrink: 0;">
+                            <span style="color:#d97706; font-weight:bold;">${booking.user_rating} ★</span>
+                        </div>
+                        ${booking.user_review ? `<div style="color: #4b5563; font-style: italic; font-size: 0.9rem; max-width: 400px; text-align: left;">"${booking.user_review}"</div>` : ''}
+                    </div>
                 ` : ''}
             </div>
         `;

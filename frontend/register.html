@@ -94,6 +94,7 @@
                 <input type="text" id="initial_location" name="initial_location" required
                     placeholder="e.g. New York, NY"
                     style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 16px;">
+                <ul id="initialLocationSuggestions"></ul>
                 <small style="color: #666; display: block; margin-top: 5px;">We need your location to show relevant
                     services</small>
             </div>
@@ -140,59 +141,7 @@
                     </ul>
                 </div>
 
-                <script>
-                    // Simple Autocomplete for Location
-                    const locInput = document.getElementById('location');
-                    const locList = document.getElementById('locationSuggestions');
-                    let debounceTimer;
 
-                    locInput.addEventListener('input', function () {
-                        const query = this.value.toLowerCase();
-                        clearTimeout(debounceTimer);
-
-                        if (query.length < 3) {
-                            locList.style.display = 'none';
-                            return;
-                        }
-
-                        // Show loading or just wait for debounce
-                        debounceTimer = setTimeout(() => {
-                            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=in`)
-                                .then(res => res.json())
-                                .then(data => {
-                                    locList.innerHTML = '';
-                                    if (data.length > 0) {
-                                        data.forEach(item => {
-                                            const li = document.createElement('li');
-                                            li.textContent = item.display_name;
-                                            li.style.padding = '10px';
-                                            li.style.cursor = 'pointer';
-                                            li.style.borderBottom = '1px solid #eee';
-                                            li.addEventListener('mouseenter', () => li.style.backgroundColor = '#f0f0f0');
-                                            li.addEventListener('mouseleave', () => li.style.backgroundColor = 'white');
-
-                                            li.addEventListener('click', () => {
-                                                locInput.value = item.display_name;
-                                                locList.style.display = 'none';
-                                            });
-                                            locList.appendChild(li);
-                                        });
-                                        locList.style.display = 'block';
-                                    } else {
-                                        locList.style.display = 'none';
-                                    }
-                                })
-                                .catch(err => console.error('Error fetching location:', err));
-                        }, 300);
-                    });
-
-                    // Close suggestions on click outside
-                    document.addEventListener('click', function (e) {
-                        if (e.target !== locInput && e.target !== locList) {
-                            locList.style.display = 'none';
-                        }
-                    });
-                </script>
 
                 <div class="form-group">
                     <label for="password">Password</label>
@@ -347,8 +296,18 @@
 
         document.addEventListener('DOMContentLoaded', initAuthNav);
     </script>
+    <script src="js/location-autocomplete.js?v=1.5"></script>
     <script src="js/register.js?v=1.3"></script>
     <script>
+        // Initialize Autocomplete for both location fields
+        document.addEventListener('DOMContentLoaded', function () {
+            // Standard location field
+            setupAddressAutocomplete('location', 'locationSuggestions');
+
+            // Initial location field (for Google flow)
+            setupAddressAutocomplete('initial_location', 'initialLocationSuggestions');
+        });
+
         // Google Sign-In Handler for Registration - Must be in global scope
         function handleGoogleRegister(response) {
             const credential = response.credential;

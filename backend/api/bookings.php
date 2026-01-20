@@ -132,11 +132,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     u.full_name as customer_name,
                     u.email as customer_email,
                     u.phone as customer_phone,
-                    b.address as customer_location
+                    b.address as customer_location,
+                    r.rating as user_rating,
+                    r.comment as user_review
                 FROM bookings b
                 JOIN services s ON b.service_id = s.id
                 JOIN providers p ON b.provider_id = p.id
                 JOIN users u ON b.customer_id = u.id
+                LEFT JOIN reviews r ON b.id = r.booking_id
                 WHERE p.user_id = ?
             ";
             
