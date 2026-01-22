@@ -554,7 +554,7 @@ function updateDashboardStats(bookings, userType) {
             .filter(b => b.status === 'completed')
             .reduce((sum, b) => sum + (parseFloat(b.total_amount) || 0), 0);
 
-        const earningsElement = document.getElementById('earnings');
+        const earningsElement = document.getElementById('earningsStat');
         if (earningsElement) earningsElement.textContent = '₹' + totalEarnings.toFixed(2);
 
         // Update Earnings Page Cards
@@ -630,7 +630,7 @@ function loadDashboardData() {
         const pendingElement = document.getElementById('pendingCount');
         const completedElement = document.getElementById('completedCount');
         const ratingElement = document.getElementById('rating');
-        const earningsElement = document.getElementById('earnings');
+        const earningsElement = document.getElementById('earningsStat');
 
         if (pendingElement) pendingElement.textContent = '0';
         if (completedElement) completedElement.textContent = '0';
