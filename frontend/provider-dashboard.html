@@ -58,6 +58,9 @@
                 <a href="#earnings" class="nav-item" data-page="earnings">
                     💰 Earnings
                 </a>
+                <a href="#schedule" class="nav-item" data-page="schedule">
+                    📅 Schedule
+                </a>
                 <a href="#profile" class="nav-item" data-page="profile">
                     ⚙️ Settings
                 </a>
@@ -165,6 +168,19 @@
                 </div>
                 <div id="earningsContent" class="earnings-list">
                     <p class="empty-state">No earnings yet</p>
+                </div>
+            </div>
+
+            <!-- Schedule Page -->
+            <div id="schedule" class="page">
+                <div class="page-header">
+                    <h1>Manage Schedule</h1>
+                    <button class="btn btn-primary" onclick="saveSchedule()">Save Changes</button>
+                </div>
+                <div class="schedule-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    <div id="scheduleList">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
             </div>
 

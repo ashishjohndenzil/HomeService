@@ -174,6 +174,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         }
+        // Check for double booking
+        if ($provider_id) {
+            // Calculate end time based on duration (default 1 hour if not set)
+            $duration = isset($data['duration']) ? floatval($data['duration']) : 1;
+            $start_datetime = new DateTime("$booking_date $booking_time");
+            $end_datetime = clone $start_datetime;
+            // Add duration hours. 
+            // Note: 'duration' logic might need frontend update to send it. 
+            // For now, assume 1 hour blocks or use simple equality check if exact match needed.
+            // But better to checking overlap.
+            
+            // Let's assume bookings are fixed 1 hour slots for simplicity unless duration is passed
+            $end_datetime->modify("+$duration hours");
+            
+            $start_str = $start_datetime->format('H:i:s');
+            $end_str = $end_datetime->format('H:i:s');
+
+            // 1. Check Provider Schedule (Working Hours)
+            $day_of_week = date('l', strtotime($booking_date));
+            $stmt = $pdo->prepare("SELECT start_time, end_time, is_active FROM provider_schedule WHERE provider_id = ? AND day_of_week = ?");
+            $stmt->execute([$provider_id, $day_of_week]);
+            $schedule = $stmt->fetch();
+
+            if ($schedule) {
+                if (!$schedule['is_active']) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Provider is not working on ' . $day_of_week]);
+                    exit;
+                }
+                
+                if ($start_str < $schedule['start_time'] || $end_str > $schedule['end_time']) {
+                     http_response_code(400);
+                     echo json_encode(['error' => 'Booking time is outside provider working hours (' . $schedule['start_time'] . ' - ' . $schedule['end_time'] . ')']);
+                     exit;
+                }
+            }
+
+            // 2. Check Existing Bookings (Overlap)
+            // An overlap occurs if:
+            // (NewStart < ExistingEnd) AND (NewEnd > ExistingStart)
+            // Existing bookings end time = booking_time + 1 hour (default)
+            // We need to fetch existing bookings for this provider on this date
+            
+            $stmt = $pdo->prepare("
+                SELECT booking_time, status 
+                FROM bookings 
+                WHERE provider_id = ? 
+                AND booking_date = ? 
+                AND status IN ('pending', 'confirmed')
+            ");
+            $stmt->execute([$provider_id, $booking_date]);
+            $existing_bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($existing_bookings as $b) {
+                $b_start = new DateTime("$booking_date " . $b['booking_time']);
+                $b_end = clone $b_start;
+                $b_end->modify("+1 hour"); // Standard 1 hour slot for existing
+                
+                // Check overlap
+                if ($start_datetime < $b_end && $end_datetime > $b_start) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'This time slot is already booked. Please choose another time.']);
+                    exit;
+                }
+            }
+        }
         
         // Create the booking
         $stmt = $pdo->prepare("
@@ -190,9 +256,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'message' => 'Booking created successfully',
                 'booking_id' => $booking_id
             ]);
+            exit;
         } else {
             http_response_code(500);
             echo json_encode(['error' => 'Failed to create booking']);
+            exit;
         }
     } catch (PDOException $e) {
         http_response_code(500);

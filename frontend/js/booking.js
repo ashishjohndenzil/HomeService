@@ -138,6 +138,7 @@ function setupBookingForm() {
 
     function updateTimeSlots() {
         const dateVal = document.getElementById('bookingDate').value;
+        const serviceId = document.getElementById('serviceSelect').value;
         const timeSelect = document.getElementById('bookingTime');
 
         if (!dateVal) {
@@ -145,38 +146,69 @@ function setupBookingForm() {
             return;
         }
 
-        timeSelect.innerHTML = '<option value="">Select a time...</option>';
+        timeSelect.innerHTML = '<option value="">Loading slots...</option>';
+        timeSelect.disabled = true;
 
-        const selectedDate = new Date(dateVal);
-        const now = new Date();
-        const isToday = selectedDate.toDateString() === now.toDateString();
+        // Determine provider ID if pre-selected (hacky: store in modal dataset or assume service generic)
+        // For now, pass service_id to finding matching providers
 
-        // Generate slots from 8 AM to 8 PM (20:00)
-        for (let hour = 8; hour <= 20; hour++) {
-            // Filter past hours if today
-            if (isToday && hour <= now.getHours() + 1) {
-                continue; // Must be at least 1 hour in advance
-            }
+        const params = new URLSearchParams({
+            date: dateVal,
+            service_id: serviceId
+        });
 
-            const timeString = `${hour.toString().padStart(2, '0')}:00`;
-            const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
+        // If we had a specific provider selected in context, we would pass it. 
+        // Current openBookingModal flow doesn't strictly store providerId in DOM, 
+        // but let's assume standard flow relies on Service mainly.
+
+        fetch(`../backend/api/get-available-slots.php?${params.toString()}`)
+            .then(res => res.json())
+            .then(data => {
+                timeSelect.innerHTML = '<option value="">Select a time...</option>';
+                timeSelect.disabled = false;
+
+                if (data.success && data.slots.length > 0) {
+                    data.slots.forEach(slot => {
+                        // Format time for display (HH:MM:SS -> 12h AM/PM)
+                        const [hours, minutes] = slot.split(':');
+                        const date = new Date();
+                        date.setHours(parseInt(hours), parseInt(minutes));
+
+                        const displayTime = date.toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+
+                        // Check if time is in past for today
+                        const now = new Date();
+                        const checkDate = new Date(dateVal + 'T' + slot);
+
+                        // If selected date is today, hide past slots with 1 hour buffer
+                        if (checkDate.toDateString() === now.toDateString()) {
+                            if (checkDate.getHours() <= now.getHours() + 1) {
+                                return;
+                            }
+                        }
+
+                        const option = document.createElement('option');
+                        option.value = slot;
+                        option.textContent = displayTime;
+                        timeSelect.appendChild(option);
+                    });
+                }
+
+                if (timeSelect.options.length <= 1) {
+                    const option = document.createElement('option');
+                    option.textContent = "No slots available";
+                    option.disabled = true;
+                    timeSelect.appendChild(option);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                timeSelect.innerHTML = '<option value="">Error loading slots</option>';
             });
-
-            const option = document.createElement('option');
-            option.value = timeString;
-            option.textContent = displayTime;
-            timeSelect.appendChild(option);
-        }
-
-        if (timeSelect.options.length <= 1) {
-            const option = document.createElement('option');
-            option.textContent = "No slots available today";
-            option.disabled = true;
-            timeSelect.appendChild(option);
-        }
     }
 
     if (form) {
@@ -189,7 +221,10 @@ function setupBookingForm() {
         }
 
         if (serviceSelect) {
-            serviceSelect.addEventListener('change', calculateTotal);
+            serviceSelect.addEventListener('change', function () {
+                calculateTotal();
+                updateTimeSlots();
+            });
         }
         if (durationInput) {
             durationInput.addEventListener('input', calculateTotal);
@@ -264,6 +299,15 @@ async function openBookingModal(serviceId = null, providerId = null) {
             serviceSelect.value = serviceId;
             // Trigger calculation
             serviceSelect.dispatchEvent(new Event('change'));
+
+            // Explicitly update time slots after setting service
+            // We need to find the updateTimeSlots function scope or trigger it via the date input which has the listener?
+            // Actually, the listener above we just added on serviceSelect will trigger updateTimeSlots via the 'change' event dispatch!
+            // But let's be safe and ensure the date input listener logic fires too if needed, 
+            // though the service select change event is sufficient now.
+        } else {
+            // If no service pre-selected, we still might want to load slots for "no service" (which will show empty/error) or just wait.
+            // But if we want it to work when user selects manually, the listener above handles it.
         }
     }
 }

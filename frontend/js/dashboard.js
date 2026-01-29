@@ -76,6 +76,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Setup filter buttons if they exist - use event delegation
     setupBookingFilters();
+
+    // Initialize Chat System
+    if (typeof setupChatSystem === 'function') {
+        setupChatSystem();
+    }
 });
 
 // Setup booking filters with event delegation
@@ -442,6 +447,7 @@ function createBookingElement(booking, userType) {
                  </div>
             </div>
             <div class="booking-actions">
+                <button class="btn btn-sm btn-primary" style="background-color: #3b82f6; border-color: #3b82f6;" onclick="openChat(${booking.provider_user_id}, '${booking.provider_name}')">Chat</button>
                 ${booking.status === 'pending' ? `<button class="btn btn-sm btn-danger" onclick="cancelBooking(${booking.id})">Cancel Booking</button>` : ''}
                 ${booking.status === 'completed' ?
                 (booking.user_rating
@@ -490,6 +496,7 @@ function createBookingElement(booking, userType) {
                 </div>
             </div>
             <div class="booking-actions">
+                <button class="btn btn-sm btn-primary" style="background-color: #3b82f6; border-color: #3b82f6;" onclick="openChat(${booking.customer_id}, '${booking.customer_name}')">Chat</button>
                 ${booking.status === 'pending' ? `
                     <button class="btn btn-sm btn-success" onclick="updateBookingStatus(${booking.id}, 'confirmed')">Confirm</button>
                     <button class="btn btn-sm btn-danger" onclick="updateBookingStatus(${booking.id}, 'cancelled')">Reject</button>
@@ -1207,3 +1214,339 @@ function uploadProfileImage(input) {
 window.reviewBooking = reviewBooking;
 window.closeReviewModal = closeReviewModal;
 window.cancelBooking = cancelBooking;
+
+// --- Schedule Management ---
+function loadSchedule() {
+    const list = document.getElementById('scheduleList');
+    if (!list) return; // Only for provider dashboard
+
+    const token = localStorage.getItem('token');
+
+    // Initial loading state
+    list.innerHTML = '<p>Loading schedule...</p>';
+
+    fetch('../backend/api/get-schedule.php', {
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                renderSchedule(data.schedule);
+            } else {
+                list.innerHTML = '<p class="error">Failed to load schedule.</p>';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            list.innerHTML = '<p class="error">Error loading schedule.</p>';
+        });
+}
+
+function renderSchedule(schedule) {
+    const list = document.getElementById('scheduleList');
+    list.innerHTML = '';
+
+    const daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    // Sort schedule based on daysOrder
+    schedule.sort((a, b) => daysOrder.indexOf(a.day_of_week) - daysOrder.indexOf(b.day_of_week));
+
+    schedule.forEach(day => {
+        const row = document.createElement('div');
+        row.className = 'schedule-row';
+        row.style.cssText = 'display: flex; align-items: center; gap: 15px; padding: 15px 0; border-bottom: 1px solid #eee;';
+
+        const isActive = day.is_active == 1;
+
+        row.innerHTML = `
+            <div style="width: 120px; font-weight: bold;">${day.day_of_week}</div>
+            <div style="flex: 1;">
+                <label class="switch" style="position: relative; display: inline-block; width: 50px; height: 24px;">
+                    <input type="checkbox" class="day-toggle" data-day="${day.day_of_week}" ${isActive ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+                    <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
+                </label>
+            </div>
+            <div class="time-inputs" style="display: flex; gap: 10px; opacity: ${isActive ? '1' : '0.5'}; pointer-events: ${isActive ? 'auto' : 'none'};">
+                <input type="time" class="start-time" value="${day.start_time}" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                <span>to</span>
+                <input type="time" class="end-time" value="${day.end_time}" style="padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+        `;
+
+        // Toggle logic
+        const toggle = row.querySelector('.day-toggle');
+        const slider = row.querySelector('.slider');
+        const timeInputs = row.querySelector('.time-inputs');
+
+        // Initial style
+        slider.style.backgroundColor = isActive ? '#2196F3' : '#ccc';
+
+        toggle.addEventListener('change', function () {
+            const checked = this.checked;
+            slider.style.backgroundColor = checked ? '#2196F3' : '#ccc';
+            timeInputs.style.opacity = checked ? '1' : '0.5';
+            timeInputs.style.pointerEvents = checked ? 'auto' : 'none';
+        });
+
+        list.appendChild(row);
+    });
+
+    // Inject style for slider pseudo-element hack
+    if (!document.getElementById('sliderStyles')) {
+        const style = document.createElement('style');
+        style.id = 'sliderStyles';
+        style.textContent = `
+            .slider.round:before {
+                position: absolute;
+                content: "";
+                height: 16px;
+                width: 16px;
+                left: 4px;
+                bottom: 4px;
+                background-color: white;
+                transition: .4s;
+                border-radius: 50%;
+            }
+            input:checked + .slider:before {
+                transform: translateX(26px);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+// --- Chat System ---
+let chatPollInterval = null;
+let currentChatContactId = null;
+
+function setupChatSystem() {
+    if (document.getElementById('chatModal')) return;
+
+    const chatHTML = `
+        <div id="chatModal" class="chat-modal" style="display: none;">
+            <div class="chat-content">
+                <div class="chat-header">
+                    <h3 id="chatContactName">Chat</h3>
+                    <button class="close-chat" onclick="closeChat()">&times;</button>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-loading">Loading messages...</div>
+                </div>
+                <form id="chatForm" class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit">Send</button>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', chatHTML);
+
+    const style = document.createElement('style');
+    style.textContent = `
+        .chat-modal { position: fixed; bottom: 20px; right: 20px; width: 350px; height: 450px; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); z-index: 2000; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e5e7eb; animation: slideUp 0.3s ease; }
+        .chat-content { display: flex; flex-direction: column; height: 100%; }
+        .chat-header { background: #3b82f6; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h3 { margin: 0; font-size: 1rem; }
+        .close-chat { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0; line-height: 1; }
+        .chat-messages { flex: 1; padding: 12px; overflow-y: auto; background: #f9fafb; display: flex; flex-direction: column; gap: 8px; }
+        .message { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 0.9rem; line-height: 1.4; word-wrap: break-word; }
+        .message.sent { align-self: flex-end; background: #3b82f6; color: white; border-bottom-right-radius: 2px; }
+        .message.received { align-self: flex-start; background: #e5e7eb; color: #1f2937; border-bottom-left-radius: 2px; }
+        .chat-input-area { padding: 12px; border-top: 1px solid #e5e7eb; display: flex; gap: 8px; background: white; }
+        .chat-input-area input { flex: 1; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 20px; outline: none; }
+        .chat-input-area button { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 600; }
+        .chat-input-area button:hover { background: #2563eb; }
+        .chat-date { text-align: center; font-size: 0.75rem; color: #9ca3af; margin: 8px 0; width: 100%; }
+        .chat-loading { text-align: center; color: #9ca3af; margin-top: 20px; width: 100%; }
+    `;
+    document.head.appendChild(style);
+
+    document.getElementById('chatForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        sendMessage();
+    });
+}
+
+function openChat(contactId, contactName) {
+    if (!localStorage.getItem('token')) return;
+
+    // Ensure setup
+    setupChatSystem();
+
+    const modal = document.getElementById('chatModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.getElementById('chatContactName').textContent = contactName || 'Chat';
+
+        // Reset and Load
+        document.getElementById('chatMessages').innerHTML = '<div class="chat-loading">Loading messages...</div>';
+        currentChatContactId = contactId;
+        loadMessages(contactId);
+
+        setTimeout(() => document.getElementById('chatInput').focus(), 100);
+
+        // Start polling
+        if (chatPollInterval) clearInterval(chatPollInterval);
+        chatPollInterval = setInterval(() => loadMessages(contactId, true), 3000);
+    }
+}
+
+function closeChat() {
+    const modal = document.getElementById('chatModal');
+    if (modal) modal.style.display = 'none';
+    if (chatPollInterval) clearInterval(chatPollInterval);
+    currentChatContactId = null;
+}
+
+function loadMessages(contactId, isPoll = false) {
+    if (!currentChatContactId || currentChatContactId !== contactId) return;
+
+    fetch('../backend/api/get-messages.php?contact_id=' + contactId, {
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                renderMessages(data.messages, isPoll);
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+function renderMessages(messages, isPoll) {
+    const container = document.getElementById('chatMessages');
+    if (!container) return;
+
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    // If polling, check if new messages arrived to avoid scroll jump
+    // For now, simple re-render
+
+    const wasScrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+
+    container.innerHTML = '';
+
+    if (messages.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#9ca3af; margin-top:20px;">No messages yet. Say hi!</div>';
+        return;
+    }
+
+    let lastDate = null;
+    messages.forEach(msg => {
+        const date = new Date(msg.created_at).toLocaleDateString();
+        if (date !== lastDate) {
+            container.innerHTML += `<div class="chat-date">${date}</div>`;
+            lastDate = date;
+        }
+
+        const isMe = msg.sender_id == user.id;
+        const className = isMe ? 'sent' : 'received';
+
+        container.innerHTML += `<div class="message ${className}" title="${new Date(msg.created_at).toLocaleTimeString()}">${msg.message}</div>`;
+    });
+
+    if (!isPoll || wasScrolledToBottom) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (!message || !currentChatContactId) return;
+
+    input.value = ''; // Optimistic clear
+
+    fetch('../backend/api/send-message.php', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            receiver_id: currentChatContactId,
+            message: message
+        })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh immediately logic controlled by loadMessages, but let's just trigger it
+                loadMessages(currentChatContactId);
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+// Expose openChat
+// Expose openChat
+window.openChat = openChat;
+window.closeChat = closeChat;
+window.setupChatSystem = setupChatSystem;
+
+function saveSchedule() {
+    const list = document.getElementById('scheduleList');
+    if (!list) return;
+
+    const rows = list.querySelectorAll('.schedule-row');
+    const scheduleData = [];
+
+    rows.forEach(row => {
+        const toggle = row.querySelector('.day-toggle');
+        const start = row.querySelector('.start-time').value;
+        const end = row.querySelector('.end-time').value;
+
+        scheduleData.push({
+            day_of_week: toggle.dataset.day,
+            is_active: toggle.checked ? 1 : 0,
+            start_time: start,
+            end_time: end
+        });
+    });
+
+    const token = localStorage.getItem('token');
+    showLoadingState(true);
+
+    fetch('../backend/api/update-schedule.php', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ schedule: scheduleData })
+    })
+        .then(res => res.json())
+        .then(data => {
+            showLoadingState(false);
+            if (data.success) {
+                showNotification('Schedule updated successfully', 'success');
+            } else {
+                showNotification(data.message || 'Failed to update schedule', 'error');
+            }
+        })
+        .catch(err => {
+            showLoadingState(false);
+            console.error(err);
+            showNotification('Error saving schedule', 'error');
+        });
+}
+
+// Hook into page switch to load schedule
+const originalSwitchPage = window.switchPage; // Backup existing
+window.switchPage = function (pageId) {
+    if (pageId === 'schedule') {
+        loadSchedule();
+    }
+    // Call original logic (duplicated here since `switchPage` is defined in scope but easy to just replicate basic logic or assume global)
+    // Re-implementing basic switch logic to be safe since `originalSwitchPage` reference might be tricky with hoisting
+
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(page => page.classList.remove('active'));
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => item.classList.remove('active'));
+
+    const selectedPage = document.getElementById(pageId);
+    if (selectedPage) selectedPage.classList.add('active');
+
+    const activeNavItem = document.querySelector(`[data-page="${pageId}"]`);
+    if (activeNavItem) activeNavItem.classList.add('active');
+};

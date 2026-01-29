@@ -82,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     s.name as service_name,
                     s.category as service_category,
 
+                    u.id as provider_user_id,
                     u.full_name as provider_name,
                     u.email as provider_email,
                     b.address as customer_location,
@@ -129,6 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     b.created_at,
                     s.name as service_name,
                     s.category as service_category,
+                    b.customer_id,
                     u.full_name as customer_name,
                     u.email as customer_email,
                     u.phone as customer_phone,
