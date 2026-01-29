@@ -1,144 +1,274 @@
-/* Admin Dashboard Polish - Overrides only */
+/* Admin Dashboard Polish - Clean & Consistent */
+/* Inherits base styles from style.css */
 
-/* Admin Badge Gradient */
-.admin-badge {
-    background: linear-gradient(135deg, var(--secondary-color) 0%, #2563eb 100%);
-    color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    vertical-align: middle;
-    margin-left: 0.5rem;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+/* Overrides */
+:root {
+    /* Use existing variables where possible, but ensure these are defined if missing */
+    --card-bg: #FFFFFF;
+    --sidebar-bg: #111827;
 }
 
-/* Ensure Action Buttons align with dashboard theme */
-.action-btn {
-    width: 32px;
-    height: 32px;
-    display: inline-flex;
+/* Sidebar structure matches dashboard.css but ensure it looks good */
+.dashboard-sidebar {
+    background: var(--primary-color);
+    /* Match style.css primary aka #1f2937 */
+    color: white;
+}
+
+.nav-item.active {
+    background: rgba(255, 255, 255, 0.1);
+    border-left: 4px solid var(--secondary-color);
+}
+
+/* Card Styling - Clean white rounded cards */
+.stat-card,
+.chart-card,
+.table-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    /* Use style.css shadow */
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card {
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 10px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    border: 1px solid var(--border-color, #e5e7eb);
+    font-size: 1.5rem;
+    background: #eff6ff;
+    color: var(--secondary-color);
+}
+
+.stat-content h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+    color: var(--text-dark);
+}
+
+.stat-content p {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+/* Charts Grid */
+.charts-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.chart-card {
+    padding: 1.5rem;
+    height: 400px;
+    /* Fixed height for consistency */
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--secondary-color);
+    padding-left: 0.75rem;
+}
+
+/* Filters Area */
+.bookings-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
     background: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    align-items: center;
 }
 
-.action-btn:hover {
-    background-color: var(--light-bg, #f3f4f6);
-    border-color: var(--secondary-color, #3b82f6);
-    transform: translateY(-1px);
-}
-
-/* Search inputs specific to admin */
-#userSearch {
-    min-width: 250px;
-}
-
-/* Form Controls match dashboard.css */
-.form-control {
-    width: 100%;
-    padding: 0.75rem 1rem;
+.bookings-filters input,
+.bookings-filters select {
+    padding: 0.6rem 1rem;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 0.95rem;
     color: var(--text-dark);
-    transition: all 0.2s ease;
-    background-color: white;
+    outline: none;
+    transition: border-color 0.2s;
+    background-color: #fff;
+    font-family: inherit;
 }
 
-.form-control:focus {
-    outline: none;
+.bookings-filters input {
+    flex: 1;
+    /* Search bar takes remaining space */
+    max-width: 400px;
+}
+
+.bookings-filters select {
+    min-width: 150px;
+    cursor: pointer;
+}
+
+.bookings-filters input:focus,
+.bookings-filters select:focus {
     border-color: var(--secondary-color);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-select.form-control {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    background-size: 1em;
-    padding-right: 2.5rem;
+/* Tables */
+.table-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    /* For rounded corners */
 }
 
-/* ==================== TABLE POLISH ==================== */
 table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-top: 1rem;
+    border-collapse: collapse;
 }
 
 th {
     background-color: #f8fafc;
     color: var(--text-light);
-    font-weight: 600;
-    font-size: 0.85rem;
-    padding: 1rem 1.5rem;
-    text-align: left;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid var(--border-color);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
 }
 
 td {
-    padding: 1rem 1.5rem;
-    vertical-align: middle;
-    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1.5rem;
     color: var(--text-dark);
+    border-bottom: 1px solid var(--border-color);
     font-size: 0.95rem;
+    vertical-align: middle;
 }
 
-/* Column Alignment overrides */
-td:nth-child(1),
-th:nth-child(1) {
-    /* ID */
-    width: 80px;
-    color: var(--text-light);
+tr:hover td {
+    background-color: #f9fafb;
 }
 
-/* Right align Amounts */
-td:nth-child(7),
-th:nth-child(7) {
-    text-align: right;
+tr:last-child td {
+    border-bottom: none;
 }
 
-/* Center Actions */
-td:last-child,
-th:last-child {
-    text-align: right;
-    width: 120px;
-}
-
-/* Button Refinements */
-.btn-sm {
+/* Action Buttons */
+.action-btn {
+    border: none;
+    cursor: pointer;
     padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
+    /* Larger padding for text */
     border-radius: 6px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    font-family: inherit;
 }
 
-/* Make delete buttons less aggressive */
-.btn-danger {
+.delete-btn,
+.cancel-btn {
     background-color: #fee2e2;
     color: #ef4444;
-    border: 1px solid #fecaca;
-    box-shadow: none;
 }
 
-.btn-danger:hover {
-    background-color: #fca5a5;
+.delete-btn:hover,
+.cancel-btn:hover {
+    background-color: #fecaca;
     color: #b91c1c;
-    border-color: #f87171;
-    transform: translateY(-1px);
+}
+
+.text-muted {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+/* Badges */
+.status-badge {
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-badge.confirmed,
+.status-badge.completed,
+.status-badge.active {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge.cancelled,
+.status-badge.inactive {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+.admin-badge {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    margin-left: 0.5rem;
+}
+
+/* Spinner */
+.spinner-sm {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--secondary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
 }

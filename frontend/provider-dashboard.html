@@ -177,7 +177,8 @@
                     <h1>Manage Schedule</h1>
                     <button class="btn btn-primary" onclick="saveSchedule()">Save Changes</button>
                 </div>
-                <div class="schedule-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div class="schedule-container"
+                    style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
                     <div id="scheduleList">
                         <!-- Populated by JS -->
                     </div>
@@ -205,6 +206,7 @@
                     <div class="form-group">
                         <label>Location</label>
                         <input type="text" id="settingsLocation" placeholder="Your location" readonly>
+                        <div id="settingsLocationSuggestions"></div>
                     </div>
                     <div class="form-actions" style="margin-top: 20px; margin-bottom: 20px; display: flex; gap: 10px;">
                         <button type="button" id="editProfileBtn" class="btn btn-secondary"

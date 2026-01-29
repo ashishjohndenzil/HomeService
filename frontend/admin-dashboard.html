@@ -7,9 +7,8 @@
     <title>Admin Dashboard - HomeService</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dashboard.css">
-    <link rel="stylesheet" href="css/dashboard.css?v=3">
-    <link rel="stylesheet" href="css/admin-dashboard.css?v=3">
-</head>
+    <link rel="stylesheet" href="css/admin-dashboard.css?v=5">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -31,12 +30,12 @@
 
     <div class="dashboard-container">
         <!-- Sidebar -->
-        <aside class="dashboard-sidebar">
+        <aside class="dashboard-sidebar sidebar">
             <div class="sidebar-user">
                 <div class="user-avatar" id="adminAvatar">👨‍💼</div>
                 <h3 id="adminName">Admin</h3>
                 <p>admin@homeservice.com</p>
-                <span class="provider-badge">ADMIN</span>
+                <span class="provider-badge admin-badge">ADMIN</span>
             </div>
 
             <nav class="sidebar-nav">
@@ -79,31 +78,76 @@
                         <div class="stat-card">
                             <div class="stat-icon">👥</div>
                             <div class="stat-content">
-                                <h3 id="totalUsers">Loading...</h3>
+                                <h3 id="totalUsers">
+                                    <div class="spinner-sm"></div>
+                                </h3>
                                 <p>Total Users</p>
                             </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">🛠️</div>
                             <div class="stat-content">
-                                <h3 id="totalProviders">Loading...</h3>
+                                <h3 id="totalProviders">
+                                    <div class="spinner-sm"></div>
+                                </h3>
                                 <p>Service Providers</p>
                             </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">📅</div>
                             <div class="stat-content">
-                                <h3 id="totalBookings">Loading...</h3>
+                                <h3 id="totalBookings">
+                                    <div class="spinner-sm"></div>
+                                </h3>
                                 <p>Total Bookings</p>
                             </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">💰</div>
                             <div class="stat-content">
-                                <h3 id="totalRevenue">Loading...</h3>
+                                <h3 id="totalRevenue">
+                                    <div class="spinner-sm"></div>
+                                </h3>
                                 <p>Total Revenue</p>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="charts-container">
+
+                        <!-- User Distribution Chart -->
+                        <div class="chart-card">
+                            <h3>User Distribution</h3>
+                            <div style="flex-grow: 1; position: relative; min-height: 0;">
+                                <canvas id="userDistChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Earnings by Service Chart -->
+                        <div class="chart-card">
+                            <h3>Earnings by Service</h3>
+                            <div style="flex-grow: 1; position: relative; min-height: 0;">
+                                <canvas id="earningsChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Booking Status Chart -->
+                        <div class="chart-card">
+                            <h3>Booking Status</h3>
+                            <div style="flex-grow: 1; position: relative; min-height: 0;">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Service Popularity Chart -->
+                        <div class="chart-card">
+                            <h3>Service Popularity (Bookings)</h3>
+                            <div style="flex-grow: 1; position: relative; min-height: 0;">
+                                <canvas id="popularityChart"></canvas>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -121,7 +165,7 @@
                             <option value="provider">Providers</option>
                         </select>
                     </div>
-                    <div class="bookings-list">
+                    <div class="table-container">
                         <table id="usersTable">
                             <thead>
                                 <tr>
@@ -136,7 +180,9 @@
                             </thead>
                             <tbody id="usersList">
                                 <tr>
-                                    <td colspan="7">Loading users...</td>
+                                    <td colspan="7" style="text-align: center; padding: 2rem;">
+                                        <div class="spinner-sm"></div> Loading users...
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -149,8 +195,8 @@
                         <h1>All Bookings</h1>
                     </div>
                     <div class="bookings-filters">
-                        <select id="bookingStatusFilter" onchange="filterBookings()"
-                            style="padding: 10px; border: 1px solid #ccc; border-radius: 8px;">
+                        <select id="bookingStatusFilter" onchange="filterBookings()" class="form-control"
+                            style="width: auto;">
                             <option value="all">All Statuses</option>
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
@@ -158,7 +204,7 @@
                             <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
-                    <div class="bookings-list">
+                    <div class="table-container">
                         <table id="bookingsTable">
                             <thead>
                                 <tr>
@@ -174,7 +220,9 @@
                             </thead>
                             <tbody id="bookingsList">
                                 <tr>
-                                    <td colspan="7">Loading bookings...</td>
+                                    <td colspan="7" style="text-align: center; padding: 2rem;">
+                                        <div class="spinner-sm"></div> Loading bookings...
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -191,11 +239,11 @@
                         <form id="adminSettingsForm">
                             <div class="form-group">
                                 <label>Name</label>
-                                <input type="text" id="settingsName" disabled>
+                                <input type="text" id="settingsName" disabled class="form-control">
                             </div>
                             <div class="form-group">
                                 <label>Email</label>
-                                <input type="email" id="settingsEmail" disabled>
+                                <input type="email" id="settingsEmail" disabled class="form-control">
                             </div>
                             <p class="verification-note">Admin details cannot be changed from here.</p>
                         </form>
@@ -209,8 +257,7 @@
     <!-- Notification Container -->
     <div id="toast-container"></div>
 
-    <script src="js/admin-dashboard.js?v=3"></script>
+    <script src="js/admin-dashboard.js?v=4"></script>
 </body>
-
 
 </html>

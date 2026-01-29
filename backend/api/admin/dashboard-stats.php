@@ -25,6 +25,52 @@ try {
     
     // Total Revenue (Completed Bookings)
     $stats['total_revenue'] = $pdo->query("SELECT SUM(total_amount) FROM bookings WHERE status = 'completed'")->fetchColumn();
+
+    // --- Chart Data ---
+
+    // --- Chart Data (Category Based, No Trends) ---
+
+    // 1. User Distribution (Customers vs Providers)
+    $user_dist_stmt = $pdo->query("
+        SELECT user_type, COUNT(*) as count 
+        FROM users 
+        GROUP BY user_type
+    ");
+    $stats['user_distribution'] = $user_dist_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 2. Booking Status Distribution
+    $status_stmt = $pdo->query("
+        SELECT status, COUNT(*) as count 
+        FROM bookings 
+        GROUP BY status
+    ");
+    $stats['status_distribution'] = $status_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 3. Earnings by Service
+    $earnings_stmt = $pdo->query("
+        SELECT 
+            s.name as service_name, 
+            SUM(b.total_amount) as earnings 
+        FROM bookings b
+        JOIN services s ON b.service_id = s.id
+        WHERE b.status = 'completed'
+        GROUP BY s.name
+        ORDER BY earnings DESC
+    ");
+    $stats['earnings_by_service'] = $earnings_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 4. Services Popularity (Bookings count) - All Services (Limit 10 for UI)
+    $services_stmt = $pdo->query("
+        SELECT 
+            s.name as service_name, 
+            COUNT(b.id) as count 
+        FROM bookings b
+        JOIN services s ON b.service_id = s.id
+        GROUP BY s.name 
+        ORDER BY count DESC 
+        LIMIT 10
+    ");
+    $stats['service_popularity'] = $services_stmt->fetchAll(PDO::FETCH_ASSOC);
     
     echo json_encode(['success' => true, 'stats' => $stats]);
 

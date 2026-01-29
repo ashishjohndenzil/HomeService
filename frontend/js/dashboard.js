@@ -81,6 +81,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof setupChatSystem === 'function') {
         setupChatSystem();
     }
+
+    // Initialize Location Autocomplete
+    if (typeof setupAddressAutocomplete === 'function') {
+        setupAddressAutocomplete('settingsLocation', 'settingsLocationSuggestions');
+    }
 });
 
 // Setup booking filters with event delegation

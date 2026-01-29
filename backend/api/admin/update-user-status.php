@@ -22,8 +22,9 @@ if (!isset($data['user_id']) || !isset($data['is_active'])) {
 }
 
 try {
-    // Map string status to TINYINT
-    $isActive = ($data['is_active'] === 'active') ? 1 : 0;
+    // Map string/int status to TINYINT
+    $rawStatus = $data['is_active'];
+    $isActive = ($rawStatus === 'active' || $rawStatus == 1 || $rawStatus === true) ? 1 : 0;
     
     $stmt = $pdo->prepare("UPDATE users SET is_active = ? WHERE id = ?");
     $result = $stmt->execute([$isActive, $data['user_id']]);

@@ -37,19 +37,34 @@ function setupAddressAutocomplete(inputId, listId) {
         addrList.style.margin = '0';
     }
 
+    let currentController = null;
+
     addrInput.addEventListener('input', function () {
         const query = this.value;
         clearTimeout(addrDebounce);
 
-        if (query.length < 3) {
+        if (query.length < 2) {
             addrList.style.display = 'none';
             return;
         }
 
         addrDebounce = setTimeout(() => {
+            // Cancel previous request if active
+            if (currentController) {
+                currentController.abort();
+            }
+            currentController = new AbortController();
+            const signal = currentController.signal;
+
+            // Hide list while searching (or show if desired, but user asked to hide status)
+            // addrList.style.display = 'none';
+
             console.log('Fetching address for:', query);
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=in`)
-                .then(res => res.json())
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=in`, { signal })
+                .then(res => {
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    return res.json();
+                })
                 .then(data => {
                     console.log('Address results:', data.length);
                     addrList.innerHTML = '';
@@ -78,15 +93,18 @@ function setupAddressAutocomplete(inputId, listId) {
                         });
                         addrList.style.display = 'block';
                     } else {
-                        console.log('No results found');
                         addrList.style.display = 'none';
                     }
                 })
                 .catch(err => {
+                    if (err.name === 'AbortError') return; // Ignore aborts
                     console.error('Error fetching address:', err);
                     addrList.style.display = 'none';
+                })
+                .finally(() => {
+                    currentController = null;
                 });
-        }, 300);
+        }, 300); // Debounce set to 300ms
     });
 
     // Hide on click outside

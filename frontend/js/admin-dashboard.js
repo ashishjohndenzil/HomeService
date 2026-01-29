@@ -9,23 +9,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const userData = JSON.parse(user);
     if (userData.user_type !== 'admin') {
-        // showNotification('Unauthorized access', 'error'); // If notification system isn't ready on instant load, alert is safer.
-        // But since we want polish, let's inject a simple overlay message or just redirect.
-        // Given this is "Unauthorized", a hard block is fine.
-        alert('Unauthorized access'); // Keeping this as is for security/block logic, OR replacing with a better pattern.
-        // Wait, I said I would replace it.
-        // Let's make it a redirect with a query param error? No, that's too much change.
-        // I will stick to alert for this critical one-off OR try to show the notification if the DOM is ready (which it is).
-        // check showNotification availability... it is defined at bottom of file... wait, hoisting?
-        // Function declarations are hoisted.
-        // However, the container might not exist yet if body isn't fully parsed? No, DOMContentLoaded fires after body.
-        // So showNotification should work.
-        // But I need to delay redirect so they see it.
-        // Actually, for "Unauthorized", just redirecting to index is fine.
-        // I'll leave the alert as it's a standard pattern for "Get out" messages, OR replace with:
-        // window.location.href = 'index.html?error=unauthorized';
-        // But the user asked for polish.
-        // I'll replace with:
         alert('Unauthorized access: Redirecting to home...');
         window.location.href = 'index.html';
         return;
@@ -84,15 +67,172 @@ async function loadStats() {
             document.getElementById('totalProviders').textContent = data.stats.total_providers;
             document.getElementById('totalBookings').textContent = data.stats.total_bookings;
             document.getElementById('totalRevenue').textContent = '₹' + parseFloat(data.stats.total_revenue || 0).toFixed(2);
+
+            // Render Charts if data exists. Check for one of the new keys
+            if (data.stats.user_distribution) {
+                renderCharts(data.stats);
+            }
         }
     } catch (error) {
         console.error('Error loading stats:', error);
+        document.getElementById('totalUsers').textContent = '-';
+        document.getElementById('totalProviders').textContent = '-';
+        document.getElementById('totalBookings').textContent = '-';
+        document.getElementById('totalRevenue').textContent = '-';
+        showNotification('Failed to load dashboard statistics', 'error');
+    }
+}
+
+function renderCharts(stats) {
+    // 1. User Distribution (Pie Chart)
+    const userDistCanvas = document.getElementById('userDistChart');
+    if (userDistCanvas) {
+        const existingChart = Chart.getChart(userDistCanvas);
+        if (existingChart) existingChart.destroy();
+
+        const userCtx = userDistCanvas.getContext('2d');
+        const userLabels = stats.user_distribution.map(item => item.user_type.charAt(0).toUpperCase() + item.user_type.slice(1));
+        const userCounts = stats.user_distribution.map(item => item.count);
+
+        new Chart(userCtx, {
+            type: 'pie',
+            data: {
+                labels: userLabels,
+                datasets: [{
+                    data: userCounts,
+                    backgroundColor: ['#3B82F6', '#10B981', '#6B7280'], // Blue, Green, Gray
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } }
+                }
+            }
+        });
+    }
+
+    // 2. Earnings by Service (Bar Chart)
+    const earningsCanvas = document.getElementById('earningsChart');
+    if (earningsCanvas) {
+        const existingChart = Chart.getChart(earningsCanvas);
+        if (existingChart) existingChart.destroy();
+
+        const earningsCtx = earningsCanvas.getContext('2d');
+        const earningsLabels = stats.earnings_by_service.map(item => item.service_name);
+        const earningsData = stats.earnings_by_service.map(item => item.earnings);
+
+        new Chart(earningsCtx, {
+            type: 'bar',
+            data: {
+                labels: earningsLabels,
+                datasets: [{
+                    label: 'Earnings (₹)',
+                    data: earningsData,
+                    backgroundColor: '#10B981', // Green
+                    borderRadius: 4,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }, // Hiding legend for single series
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: function (val) { return '₹' + val; } },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // 3. Booking Status (Doughnut Chart)
+    const statusCanvas = document.getElementById('statusChart');
+    if (statusCanvas) {
+        const existingChart = Chart.getChart(statusCanvas);
+        if (existingChart) existingChart.destroy();
+
+        const statusCtx = statusCanvas.getContext('2d');
+        const statusColors = {
+            'pending': '#F59E0B',
+            'confirmed': '#3B82F6',
+            'completed': '#10B981',
+            'cancelled': '#EF4444'
+        };
+
+        const statusLabels = stats.status_distribution.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1));
+        const statusCounts = stats.status_distribution.map(item => item.count);
+        const backgroundColors = stats.status_distribution.map(item => statusColors[item.status] || '#9CA3AF');
+
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusCounts,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } }
+                }
+            }
+        });
+    }
+
+    // 4. Service Popularity (Horizontal Bar Chart)
+    const popularityCanvas = document.getElementById('popularityChart');
+    if (popularityCanvas) {
+        const existingChart = Chart.getChart(popularityCanvas);
+        if (existingChart) existingChart.destroy();
+
+        const popCtx = popularityCanvas.getContext('2d');
+        const popLabels = (stats.service_popularity || []).map(item => item.service_name);
+        const popCounts = (stats.service_popularity || []).map(item => item.count);
+
+        new Chart(popCtx, {
+            type: 'bar',
+            data: {
+                labels: popLabels,
+                datasets: [{
+                    label: 'Bookings',
+                    data: popCounts,
+                    backgroundColor: '#8B5CF6', // Purple
+                    borderRadius: 4,
+                    barPercentage: 0.7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
     }
 }
 
 async function loadUsers() {
     const tbody = document.getElementById('usersList');
-    tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><div class="spinner-sm"></div> Loading...</td></tr>';
 
     try {
         const token = localStorage.getItem('token');
@@ -115,7 +255,7 @@ async function loadUsers() {
 
 async function loadAllBookings() {
     const tbody = document.getElementById('bookingsList');
-    tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><div class="spinner-sm"></div> Loading...</td></tr>';
 
     try {
         const token = localStorage.getItem('token');
@@ -146,25 +286,25 @@ function renderUsers(users) {
     tbody.innerHTML = '';
 
     if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">No users found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No users found</td></tr>';
         return;
     }
 
     users.forEach(user => {
-        const tr = document.createElement('tr');
-        const statusClass = user.is_active != 0 ? 'status-confirmed' : 'status-cancelled'; // Using dashboard.css classes (confirmed=green, cancelled=red)
-        const statusText = user.is_active != 0 ? '✅ Active' : '❌ Inactive';
-        const badgeClass = user.is_active != 0 ? 'verified-badge' : 'status-badge status-cancelled'; // Use verified badge/status badge
+        const active = user.is_active == 1;
+        const statusClass = active ? 'active' : 'inactive';
+        const statusText = active ? 'Active' : 'Inactive';
 
+        const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>#${user.id}</td>
             <td>${user.full_name}</td>
             <td>${user.email}</td>
             <td>${user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1)}</td>
-            <td><span class="${badgeClass}" onclick="toggleUserStatus(${user.id}, ${user.is_active})" style="cursor: pointer;">${statusText}</span></td>
+            <td><span class="status-badge ${statusClass}" onclick="toggleUserStatus(${user.id}, ${user.is_active})" style="cursor: pointer;">${statusText}</span></td>
             <td>${new Date(user.created_at).toLocaleDateString()}</td>
             <td>
-                <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})" title="Delete">🗑️ Delete</button>
+                <button class="action-btn delete-btn" onclick="deleteUser(${user.id})">Delete</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -176,7 +316,7 @@ function renderBookings(bookings) {
     tbody.innerHTML = '';
 
     if (bookings.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">No bookings found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No bookings found</td></tr>';
         return;
     }
 
@@ -188,12 +328,12 @@ function renderBookings(bookings) {
             <td>${booking.customer_name}</td>
             <td>${booking.provider_name}</td>
             <td>${new Date(booking.booking_date).toLocaleDateString()}</td>
-            <td><span class="status-badge ${booking.status}">${booking.status}</span></td>
+            <td><span class="status-badge ${booking.status}">${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span></td>
             <td>₹${parseFloat(booking.total_amount).toFixed(2)}</td>
             <td>
                 ${booking.status === 'pending' || booking.status === 'confirmed' ?
-                `<button class="btn btn-sm btn-danger" onclick="cancelBooking(${booking.id})" title="Cancel Booking">❌ Cancel</button>` :
-                ''}
+                `<button class="action-btn cancel-btn" onclick="cancelBooking(${booking.id})">Cancel</button>` :
+                '<span class="text-muted">-</span>'}
             </td>
         `;
         tbody.appendChild(tr);
@@ -233,7 +373,6 @@ async function toggleUserStatus(userId, currentStatus) {
     if (!confirm(`Are you sure you want to ${action} this user?`)) return;
 
     try {
-        showLoadingState(true);
         const token = localStorage.getItem('token');
         const response = await fetch('../backend/api/admin/update-user-status.php', {
             method: 'POST',
@@ -250,13 +389,10 @@ async function toggleUserStatus(userId, currentStatus) {
             showNotification('User updated successfully', 'success');
             loadUsers();
         } else {
-            showNotification('Failed to update user: ' + (data.message || 'Unknown error'), 'error');
+            showNotification('Failed to update user', 'error');
         }
     } catch (error) {
-        console.error('Error updating user:', error);
         showNotification('Error updating user status', 'error');
-    } finally {
-        showLoadingState(false);
     }
 }
 
@@ -264,7 +400,6 @@ async function deleteUser(userId) {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
 
     try {
-        showLoadingState(true);
         const token = localStorage.getItem('token');
         const response = await fetch('../backend/api/admin/delete-user.php', {
             method: 'POST',
@@ -281,13 +416,10 @@ async function deleteUser(userId) {
             showNotification('User deleted successfully', 'success');
             loadUsers();
         } else {
-            showNotification('Failed to delete user: ' + (data.message || 'Unknown error'), 'error');
+            showNotification('Failed to delete user', 'error');
         }
     } catch (error) {
-        console.error('Error deleting user:', error);
         showNotification('Error deleting user', 'error');
-    } finally {
-        showLoadingState(false);
     }
 }
 
@@ -295,7 +427,6 @@ async function cancelBooking(bookingId) {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
 
     try {
-        showLoadingState(true);
         const token = localStorage.getItem('token');
         const response = await fetch('../backend/api/admin/update-booking-status.php', {
             method: 'POST',
@@ -312,44 +443,17 @@ async function cancelBooking(bookingId) {
             showNotification('Booking cancelled successfully', 'success');
             loadAllBookings();
         } else {
-            showNotification('Failed to cancel booking: ' + (data.message || 'Unknown error'), 'error');
+            showNotification('Failed to cancel booking', 'error');
         }
     } catch (error) {
-        console.error('Error cancelling booking:', error);
         showNotification('Error cancelling booking', 'error');
-    } finally {
-        showLoadingState(false);
     }
 }
 
 
-// Ensure cancelBooking is globally available or handled in render
 window.cancelBooking = cancelBooking;
 window.toggleUserStatus = toggleUserStatus;
 window.deleteUser = deleteUser;
-
-// --- Polish Helpers ---
-
-function showLoadingState(isLoading) {
-    let overlay = document.getElementById('loadingOverlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'loadingOverlay';
-        overlay.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.7); z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-        `;
-        overlay.innerHTML = '<div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>';
-
-        const styleSheet = document.createElement("style");
-        styleSheet.innerText = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
-        document.head.appendChild(styleSheet);
-
-        document.body.appendChild(overlay);
-    }
-    overlay.style.display = isLoading ? 'flex' : 'none';
-}
 
 function showNotification(message, type = 'info') {
     let container = document.getElementById('toast-container');
@@ -385,4 +489,3 @@ function showNotification(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
-
