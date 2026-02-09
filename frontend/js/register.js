@@ -51,6 +51,7 @@ function validateEmail(field) {
         return false;
     }
 
+    // Regex validation first
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         suggestion.textContent = 'Please enter a valid email format (e.g., user@example.com)';
@@ -59,10 +60,45 @@ function validateEmail(field) {
         return false;
     }
 
-    suggestion.textContent = '✓ Email looks good';
-    suggestion.className = 'validation-suggestion success-suggestion';
-    field.style.borderColor = '#10b981';
+    // Debounced server-side check
+    clearTimeout(field.checkEmailTimeout);
+    field.checkEmailTimeout = setTimeout(() => {
+        checkEmailServer(field, email);
+    }, 500);
+
+    // Tentative success until server responds
+    suggestion.textContent = 'Checking availability...';
+    suggestion.className = 'validation-suggestion info-suggestion';
+    field.style.borderColor = '#3b82f6';
     return true;
+}
+
+function checkEmailServer(field, email) {
+    const suggestion = createSuggestionElement(field);
+
+    fetch(`../backend/api/check-email.php?email=${encodeURIComponent(email)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.exists) {
+                suggestion.textContent = '❌ Email already registered';
+                suggestion.className = 'validation-suggestion error-suggestion';
+                field.style.borderColor = '#ef4444';
+                field.setCustomValidity('Email already exists');
+            } else {
+                suggestion.textContent = '✓ Email available';
+                suggestion.className = 'validation-suggestion success-suggestion';
+                field.style.borderColor = '#10b981';
+                field.setCustomValidity('');
+            }
+        })
+        .catch(err => {
+            console.error('Error checking email:', err);
+            // Default to valid if check fails to avoid blocking user unnecessarily
+            suggestion.textContent = '✓ Email looks good (Offline check)';
+            suggestion.className = 'validation-suggestion success-suggestion';
+            field.style.borderColor = '#10b981';
+            field.setCustomValidity('');
+        });
 }
 
 function validatePhone(field) {

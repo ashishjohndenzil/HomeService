@@ -90,8 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     r.comment as user_review
                 FROM bookings b
                 JOIN services s ON b.service_id = s.id
-                JOIN providers p ON b.provider_id = p.id
-                JOIN users u ON p.user_id = u.id
+                LEFT JOIN providers p ON b.provider_id = p.id
+                LEFT JOIN users u ON p.user_id = u.id
                 JOIN users cust ON b.customer_id = cust.id
                 LEFT JOIN reviews r ON b.id = r.booking_id
                 WHERE b.customer_id = ?

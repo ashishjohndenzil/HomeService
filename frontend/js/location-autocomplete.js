@@ -1,119 +1,177 @@
 /**
- * OpenStreetMap Address Autocomplete
- * Uses Nominatim API to fetch address suggestions
+ * HomeService Location Autocomplete v3.0
+ * Uses OpenStreetMap Nominatim API
+ * Consolidated from booking.js and location-autocomplete.js
  */
 
-/**
- * Setup address autocomplete for a given input field and suggestions list
- * @param {string} inputId - The ID of the input field
- * @param {string} listId - The ID of the ul/div to show suggestions
- */
-function setupAddressAutocomplete(inputId, listId) {
-    const addrInput = document.getElementById(inputId);
-    const addrList = document.getElementById(listId);
-    let addrDebounce;
+(function () {
+    // Inject Styles for Autocomplete
+    const style = document.createElement('style');
+    style.textContent = `
+        .geo-suggestions-container {
+            position: fixed;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 2147483647; /* Max Z-Index */
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            display: none;
+            box-sizing: border-box;
+            width: auto;
+            min-width: 250px;
+        }
+        .geo-suggestion-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .geo-suggestion-item:hover {
+            background-color: #f0f9ff;
+        }
+        .geo-suggestion-icon {
+            color: #3b82f6; 
+            font-size: 1.1em;
+        }
+        .geo-suggestion-text {
+            display: flex;
+            flex-direction: column;
+        }
+        .geo-suggestion-main {
+            font-weight: 600;
+            color: #111827;
+        }
+        .geo-suggestion-sub {
+            font-size: 0.8em;
+            color: #6b7280;
+        }
+    `;
+    document.head.appendChild(style);
 
-    if (!addrInput || !addrList) {
-        // console.warn(`Autocomplete: Elements not found for ${inputId} or ${listId}`);
-        return;
-    }
+    class LocationAutocomplete {
+        constructor(inputId) {
+            this.input = document.getElementById(inputId);
+            if (!this.input) return;
 
-    // Add CSS class if not present to ensure styling
-    if (!addrList.classList.contains('suggestions-list')) {
-        addrList.classList.add('suggestions-list');
-    }
+            // Prevent duplicates
+            if (this.input.dataset.autocompleteAttached === 'true') return;
+            this.input.dataset.autocompleteAttached = 'true';
 
-    // Ensure basic styles are present if not in CSS
-    if (!addrList.style.position) {
-        addrList.style.position = 'absolute';
-        addrList.style.zIndex = '1000';
-        addrList.style.backgroundColor = 'white';
-        addrList.style.width = '100%';
-        addrList.style.maxHeight = '200px';
-        addrList.style.overflowY = 'auto';
-        addrList.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-        addrList.style.listStyle = 'none';
-        addrList.style.padding = '0';
-        addrList.style.margin = '0';
-    }
+            this.container = document.createElement('div');
+            this.container.className = 'geo-suggestions-container';
+            document.body.appendChild(this.container);
 
-    let currentController = null;
+            this.debounceTimer = null;
+            this.abortController = null;
 
-    addrInput.addEventListener('input', function () {
-        const query = this.value;
-        clearTimeout(addrDebounce);
-
-        if (query.length < 2) {
-            addrList.style.display = 'none';
-            return;
+            this.init();
         }
 
-        addrDebounce = setTimeout(() => {
-            // Cancel previous request if active
-            if (currentController) {
-                currentController.abort();
+        init() {
+            this.input.addEventListener('input', () => this.handleInput());
+            this.input.addEventListener('focus', () => this.updatePosition());
+
+            window.addEventListener('resize', () => this.updatePosition());
+            window.addEventListener('scroll', () => this.updatePosition(), true);
+
+            document.addEventListener('click', (e) => {
+                if (e.target !== this.input && !this.container.contains(e.target)) {
+                    this.hide();
+                }
+            });
+        }
+
+        handleInput() {
+            clearTimeout(this.debounceTimer);
+            const query = this.input.value.trim();
+            if (query.length < 3) {
+                this.hide();
+                return;
             }
-            currentController = new AbortController();
-            const signal = currentController.signal;
-
-            // Hide list while searching (or show if desired, but user asked to hide status)
-            // addrList.style.display = 'none';
-
-            console.log('Fetching address for:', query);
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=in`, { signal })
-                .then(res => {
-                    if (!res.ok) throw new Error('Network response was not ok');
-                    return res.json();
-                })
-                .then(data => {
-                    console.log('Address results:', data.length);
-                    addrList.innerHTML = '';
-                    if (data.length > 0) {
-                        data.forEach(item => {
-                            const li = document.createElement('li');
-                            li.textContent = item.display_name;
-                            li.style.padding = '10px';
-                            li.style.cursor = 'pointer';
-                            li.style.borderBottom = '1px solid #eee';
-                            li.style.fontSize = '0.9rem';
-
-                            // Hover effects
-                            li.addEventListener('mouseenter', () => li.style.backgroundColor = '#f0f0f0');
-                            li.addEventListener('mouseleave', () => li.style.backgroundColor = 'white');
-
-                            li.addEventListener('click', () => {
-                                addrInput.value = item.display_name;
-                                addrList.style.display = 'none';
-
-                                // Trigger change event
-                                addrInput.dispatchEvent(new Event('change'));
-                                addrInput.dispatchEvent(new Event('input'));
-                            });
-                            addrList.appendChild(li);
-                        });
-                        addrList.style.display = 'block';
-                    } else {
-                        addrList.style.display = 'none';
-                    }
-                })
-                .catch(err => {
-                    if (err.name === 'AbortError') return; // Ignore aborts
-                    console.error('Error fetching address:', err);
-                    addrList.style.display = 'none';
-                })
-                .finally(() => {
-                    currentController = null;
-                });
-        }, 300); // Debounce set to 300ms
-    });
-
-    // Hide on click outside
-    document.addEventListener('click', function (e) {
-        if (e.target !== addrInput && e.target !== addrList) {
-            addrList.style.display = 'none';
+            this.debounceTimer = setTimeout(() => this.fetchSuggestions(query), 400);
         }
-    });
-}
 
-// Global export
-window.setupAddressAutocomplete = setupAddressAutocomplete;
+        async fetchSuggestions(query) {
+            if (this.abortController) this.abortController.abort();
+            this.abortController = new AbortController();
+
+            try {
+                this.input.style.borderColor = '#3b82f6'; // Loading blue border
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=in`, {
+                    signal: this.abortController.signal
+                });
+                if (!res.ok) throw new Error('API Error');
+                const data = await res.json();
+                this.render(data);
+            } catch (err) {
+                if (err.name !== 'AbortError') console.error(err);
+            } finally {
+                this.input.style.borderColor = '';
+            }
+        }
+
+        render(data) {
+            this.container.innerHTML = '';
+            if (data.length === 0) {
+                this.hide();
+                return;
+            }
+
+            data.forEach(item => {
+                const parts = item.display_name.split(',');
+                const main = parts[0];
+                const sub = parts.slice(1).join(',').trim();
+
+                const el = document.createElement('div');
+                el.className = 'geo-suggestion-item';
+                el.innerHTML = `
+                    <span class="geo-suggestion-icon">📍</span>
+                    <div class="geo-suggestion-text">
+                        <span class="geo-suggestion-main">${main}</span>
+                        <span class="geo-suggestion-sub">${sub}</span>
+                    </div>
+                `;
+                el.addEventListener('click', () => {
+                    this.input.value = item.display_name;
+                    this.hide();
+                    this.input.dispatchEvent(new Event('change'));
+                    this.input.dispatchEvent(new Event('input')); // Ensure both events fire
+                });
+                this.container.appendChild(el);
+            });
+            this.show();
+        }
+
+        show() {
+            this.updatePosition();
+            this.container.style.display = 'block';
+        }
+
+        hide() {
+            this.container.style.display = 'none';
+        }
+
+        updatePosition() {
+            if (this.container.style.display === 'none') return;
+            const rect = this.input.getBoundingClientRect();
+            this.container.style.top = (rect.bottom + 4) + 'px';
+            this.container.style.left = rect.left + 'px';
+            this.container.style.width = rect.width + 'px';
+        }
+    }
+
+    // Expose Global Init
+    window.initLocationAutocomplete = function (inputId) {
+        // Delay slightly to ensure element exists if just created
+        setTimeout(() => {
+            new LocationAutocomplete(inputId);
+        }, 100);
+    };
+})();

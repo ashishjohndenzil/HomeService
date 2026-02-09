@@ -219,54 +219,34 @@
         </button>
     </div>
 
-    <script src="js/location-autocomplete.js"></script>
+
     <script src="js/booking.js?v=7"></script>
     <script src="js/service-loader.js?v=3"></script>
 
+    <script src="js/main.js"></script>
     <script>
-        function initializeNavigation() {
-            const user = localStorage.getItem('user');
-            const authLinks = document.getElementById('authLinks');
-            const userLinks = document.getElementById('userLinks');
+        // Page-specific logic for Service Details
 
+        document.addEventListener('DOMContentLoaded', () => {
+            updateServiceCTA();
+        });
+
+        function updateServiceCTA() {
+            const user = localStorage.getItem('user');
             if (user) {
                 try {
                     const userData = JSON.parse(user);
-                    authLinks.style.display = 'none';
-                    userLinks.style.display = 'flex';
-                    document.getElementById('userGreeting').textContent = `Welcome, ${userData.full_name}!`;
-
-                    const dashboardLink = document.getElementById('dashboardLink');
-                    if (userData.user_type === 'provider') {
-                        dashboardLink.href = 'provider-dashboard.html';
-                    } else {
-                        dashboardLink.href = 'customer-dashboard.html';
-                    }
-
                     // Update CTA for logged-in users
-                    document.getElementById('ctaText').textContent = 'Get a professional plumber at your door. Book your service now.';
-                    document.getElementById('ctaButtons').innerHTML = '<button class="btn btn-primary" onclick="openBookingModal(1)">Book Now</button>';
+                    const ctaText = document.getElementById('ctaText');
+                    const ctaButtons = document.getElementById('ctaButtons');
+
+                    if (ctaText) ctaText.textContent = 'Get a professional plumber at your door. Book your service now.';
+                    if (ctaButtons) ctaButtons.innerHTML = '<button class="btn btn-primary" onclick="openBookingModal(1)">Book Now</button>';
                 } catch (e) {
-                    console.error('Error parsing user data:', e);
-                    authLinks.style.display = 'flex';
-                    userLinks.style.display = 'none';
+                    console.error('Error parsing user data for CTA:', e);
                 }
-            } else {
-                authLinks.style.display = 'flex';
-                userLinks.style.display = 'none';
             }
         }
-
-        function handleLogout(event) {
-            event.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
-                location.reload();
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', initializeNavigation);
 
         // Floating Book Now button functionality
         const floatingBtn = document.getElementById('floatingBookBtn');
@@ -283,128 +263,6 @@
                     floatingBtn.classList.add('show');
                 } else {
                     floatingBtn.classList.remove('show');
-                }
-            }
-        });
-
-        // Search autocomplete functionality
-        const services = [
-            {
-                name: 'Plumbing',
-                icon: '🚰',
-                description: 'Leak repair, faucet installation, drain cleaning',
-                url: 'service-plumbing.html',
-                keywords: ['plumber', 'leak', 'pipe', 'faucet', 'drain', 'toilet', 'water']
-            },
-            {
-                name: 'Carpentry',
-                icon: '🛠️',
-                description: 'Door repair, furniture assembly, custom woodwork',
-                url: 'service-carpentry.html',
-                keywords: ['carpenter', 'wood', 'door', 'furniture', 'cabinet', 'shelving']
-            },
-            {
-                name: 'Electrical',
-                icon: '⚡',
-                description: 'Wiring, socket installation, lighting upgrades',
-                url: 'service-electrical.html',
-                keywords: ['electrician', 'wiring', 'socket', 'light', 'power', 'switch']
-            },
-            {
-                name: 'Cleaning',
-                icon: '🧹',
-                description: 'Deep cleaning, move-in/out, kitchen & bathroom',
-                url: 'service-cleaning.html',
-                keywords: ['clean', 'maid', 'sanitize', 'housekeeping', 'deep clean']
-            },
-            {
-                name: 'Painting',
-                icon: '🎨',
-                description: 'Interior & exterior painting, wall preparation',
-                url: 'service-painting.html',
-                keywords: ['paint', 'painter', 'interior', 'exterior', 'wall', 'color']
-            },
-            {
-                name: 'Appliance Repair',
-                icon: '🔧',
-                description: 'Refrigerator, washing machine, AC repair',
-                url: 'service-appliance.html',
-                keywords: ['appliance', 'fridge', 'refrigerator', 'washing machine', 'ac', 'repair']
-            }
-        ];
-
-        function filterServices(query) {
-            if (!query) return [];
-
-            query = query.toLowerCase();
-            return services.filter(service => {
-                return service.name.toLowerCase().includes(query) ||
-                    service.description.toLowerCase().includes(query) ||
-                    service.keywords.some(keyword => keyword.includes(query));
-            });
-        }
-
-        const navSearchInput = document.getElementById('navServiceSearch');
-        const navAutocompleteDiv = document.getElementById('navSearchAutocomplete');
-
-        function displayNavAutocomplete(results) {
-            if (results.length === 0) {
-                navAutocompleteDiv.innerHTML = '<div class="autocomplete-empty-navbar">No services found</div>';
-                navAutocompleteDiv.classList.add('active');
-                return;
-            }
-
-            navAutocompleteDiv.innerHTML = results.map(service => `
-                <div class="autocomplete-item-navbar" onclick="window.location.href='${service.url}'">
-                    <span class="autocomplete-icon-navbar">${service.icon}</span>
-                    <div>
-                        <div class="autocomplete-title-navbar">${service.name}</div>
-                        <div class="autocomplete-desc-navbar">${service.description}</div>
-                    </div>
-                </div>
-            `).join('');
-
-            navAutocompleteDiv.classList.add('active');
-        }
-
-        navSearchInput.addEventListener('input', (e) => {
-            const query = e.target.value.trim();
-
-            if (query.length < 1) {
-                navAutocompleteDiv.classList.remove('active');
-                return;
-            }
-
-            const results = filterServices(query);
-            if (results.length > 0) {
-                displayNavAutocomplete(results);
-            } else {
-                navAutocompleteDiv.classList.remove('active');
-            }
-        });
-
-        navSearchInput.addEventListener('focus', (e) => {
-            const query = e.target.value.trim();
-            if (query.length > 0) {
-                const results = filterServices(query);
-                if (results.length > 0) {
-                    displayNavAutocomplete(results);
-                }
-            }
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-wrapper-navbar')) {
-                navAutocompleteDiv.classList.remove('active');
-            }
-        });
-
-        navSearchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const query = e.target.value.trim();
-                const results = filterServices(query);
-                if (results.length > 0) {
-                    window.location.href = results[0].url;
                 }
             }
         });

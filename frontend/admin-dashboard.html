@@ -5,15 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - HomeService</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/dashboard.css?v=2">
     <link rel="stylesheet" href="css/admin-dashboard.css?v=5">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
     <nav class="navbar">
-        <div class="container">
+        <div class="container navbar-main">
             <a href="index.html" class="logo" style="text-decoration: none; color: inherit;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -21,9 +21,34 @@
                 </svg>
                 HomeService
             </a>
+
+            <!-- Search Bar in Header -->
+            <div class="navbar-search">
+                <div class="search-wrapper-navbar">
+                    <svg class="search-icon-navbar" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="navServiceSearch" class="search-input-navbar"
+                        placeholder="Search services..." autocomplete="off">
+                    <div id="navSearchAutocomplete" class="search-autocomplete-navbar"></div>
+                </div>
+            </div>
+
             <ul class="nav-links">
                 <li><a href="index.html">Home</a></li>
-                <li><a href="#" class="nav-btn" onclick="logout()">Logout</a></li>
+                <li><a href="index.html#services">Services</a></li>
+                <li id="authLinks">
+                    <a href="login.html" class="nav-btn">Login</a>
+                    <a href="register.html" class="nav-btn nav-btn-primary">Sign Up</a>
+                </li>
+                <li id="userLinks" style="display: none;" class="user-nav-links">
+                    <span id="userGreeting" class="user-greeting"></span>
+                    <a href="#" id="dashboardLink" class="nav-btn nav-btn-primary">Dashboard</a>
+                    <a href="#" id="logoutLink" class="nav-btn nav-logout" onclick="handleLogout(event)">Logout</a>
+                </li>
             </ul>
         </div>
     </nav>
@@ -32,7 +57,7 @@
         <!-- Sidebar -->
         <aside class="dashboard-sidebar sidebar">
             <div class="sidebar-user">
-                <div class="user-avatar" id="adminAvatar">👨‍💼</div>
+                <div class="user-avatar" id="adminAvatar">🛡️</div>
                 <h3 id="adminName">Admin</h3>
                 <p>admin@homeservice.com</p>
                 <span class="provider-badge admin-badge">ADMIN</span>
@@ -158,12 +183,12 @@
                     </div>
                     <div class="bookings-filters">
                         <input type="text" id="userSearch" placeholder="Search users..." onkeyup="filterUsers()"
-                            class="form-control">
-                        <select id="userTypeFilter" onchange="filterUsers()" class="form-control">
-                            <option value="all">All Types</option>
-                            <option value="customer">Customers</option>
-                            <option value="provider">Providers</option>
-                        </select>
+                            class="search-input">
+                        <div class="filter-wrapper" id="userTypeFilters">
+                            <button class="filter-btn active" data-filter="all">All Types</button>
+                            <button class="filter-btn" data-filter="customer">Customers</button>
+                            <button class="filter-btn" data-filter="provider">Providers</button>
+                        </div>
                     </div>
                     <div class="table-container">
                         <table id="usersTable">
@@ -195,14 +220,13 @@
                         <h1>All Bookings</h1>
                     </div>
                     <div class="bookings-filters">
-                        <select id="bookingStatusFilter" onchange="filterBookings()" class="form-control"
-                            style="width: auto;">
-                            <option value="all">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
+                        <div class="filter-wrapper" id="bookingStatusFilters">
+                            <button class="filter-btn active" data-filter="all">All Statuses</button>
+                            <button class="filter-btn" data-filter="pending">Pending</button>
+                            <button class="filter-btn" data-filter="confirmed">Confirmed</button>
+                            <button class="filter-btn" data-filter="completed">Completed</button>
+                            <button class="filter-btn" data-filter="cancelled">Cancelled</button>
+                        </div>
                     </div>
                     <div class="table-container">
                         <table id="bookingsTable">
@@ -255,8 +279,9 @@
     </div>
 
     <!-- Notification Container -->
-    <div id="toast-container"></div>
 
+
+    <script src="js/main.js?v=2"></script>
     <script src="js/admin-dashboard.js?v=4"></script>
 </body>
 

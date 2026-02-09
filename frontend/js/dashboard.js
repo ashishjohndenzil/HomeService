@@ -32,14 +32,38 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('settingsPhone').value = userData.phone || '';
     document.getElementById('settingsLocation').value = userData.location || '';
 
+    // Initialize Autocomplete for Profile Location
+    if (typeof window.initLocationAutocomplete === 'function') {
+        window.initLocationAutocomplete('settingsLocation');
+    }
+
     // Set Profile Image
+    // Set Profile Image or Default Icon
+    const img = document.getElementById('avatarImage');
+    const initials = document.getElementById('avatarInitials');
+
     if (userData.profile_image) {
-        const img = document.getElementById('avatarImage');
-        const initials = document.getElementById('avatarInitials');
         if (img && initials) {
-            img.src = userData.profile_image; // Ensure backend returns full or correct relative path
+            img.src = userData.profile_image;
             img.style.display = 'block';
             initials.style.display = 'none';
+        }
+    } else {
+        // Fallback to Icon based on Role
+        if (img) img.style.display = 'none';
+        if (initials) {
+            initials.style.display = 'flex';
+            // Set icon based on user type
+            if (userType === 'provider') {
+                initials.innerHTML = '🛠️'; // Tool/Worker icon for Provider
+                initials.style.background = '#e0e7ff'; // Light Indigo
+                initials.style.color = '#4338ca';
+            } else {
+                initials.innerHTML = '👤'; // User icon for Customer
+                initials.style.background = '#f3f4f6'; // Light Gray
+                initials.style.color = '#374151';
+            }
+            initials.style.fontSize = '2rem';
         }
     }
 
@@ -84,7 +108,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initialize Location Autocomplete
     if (typeof setupAddressAutocomplete === 'function') {
+        console.log('Dashboard: Initializing Autocomplete for settingsLocation');
         setupAddressAutocomplete('settingsLocation', 'settingsLocationSuggestions');
+    } else {
+        console.warn('Dashboard: setupAddressAutocomplete not found');
     }
 });
 
@@ -139,6 +166,9 @@ function loadCustomerServices() {
                 const categories = Array.from(new Set(customerServicesCache.map(s => s.category || s.name)));
                 renderCustomerCategoryFilters(categories);
                 renderCustomerServices(customerServicesCache);
+
+                // Load providers after services but don't render them yet
+                loadAllProviders();
             } else {
                 servicesContent.innerHTML = '<p class="empty-state">No services available at the moment.</p>';
             }
@@ -189,16 +219,38 @@ function renderCustomerCategoryFilters(categories) {
         const btn = e.target.closest('.filter-btn');
         if (!btn) return;
         const selected = btn.dataset.category;
-        filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
 
-        if (selected === 'all') {
-            renderCustomerServices(customerServicesCache);
-        } else {
-            const filtered = customerServicesCache.filter(s => (s.category || s.name) === selected);
-            renderCustomerServices(filtered);
-        }
+        filterByCategory(selected);
     });
+}
+
+function filterByCategory(category) {
+    const filterBar = document.getElementById('serviceCategoryFilters');
+    if (filterBar) {
+        filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = filterBar.querySelector(`button[data-category="${category}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
+    }
+
+    const professionalsHeader = document.getElementById('professionalsHeader');
+
+    if (category === 'all') {
+        renderCustomerServices(customerServicesCache);
+
+        const providersContent = document.getElementById('professionalsContent');
+        if (providersContent) {
+            providersContent.innerHTML = '';
+        }
+        if (professionalsHeader) professionalsHeader.style.display = 'none';
+    } else {
+        const filteredServices = customerServicesCache.filter(s => (s.category || s.name) === category);
+        renderCustomerServices(filteredServices);
+
+        const filteredProviders = allProvidersCache.filter(p => (p.category || p.service_name) === category);
+
+        if (professionalsHeader) professionalsHeader.style.display = 'block';
+        renderProviders(filteredProviders);
+    }
 }
 
 function renderCustomerServices(services) {
@@ -226,21 +278,139 @@ function renderCustomerServices(services) {
             <span class="category-badge">${service.category || service.name}</span>
             <h3>${icon} ${service.name}</h3>
             <p>${service.description || 'Professional service'}</p>
-            <button class="btn btn-primary btn-sm" type="button" data-service-id="${service.id}">Book Now</button>
+            <button class="btn btn-primary btn-sm" type="button" data-category="${service.category || service.name}">Select Professional</button>
         `;
 
         // Add event listener to the button
-        const bookBtn = serviceCard.querySelector('button');
-        bookBtn.addEventListener('click', function () {
-            if (typeof window.openBookingModal === 'function') {
-                window.openBookingModal(service.id);
-            } else {
-                console.error('openBookingModal function not found');
+        const selectBtn = serviceCard.querySelector('button');
+        selectBtn.addEventListener('click', function () {
+            const category = this.dataset.category;
+            filterByCategory(category);
+
+            // Scroll to professionals section
+            const professionalsSection = document.getElementById('professionalsContent');
+            if (professionalsSection) {
+                // Add a small delay to ensure rendering is complete
+                setTimeout(() => {
+                    professionalsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
             }
         });
 
         servicesContent.appendChild(serviceCard);
     });
+}
+
+// Load all providers
+let allProvidersCache = [];
+
+function loadAllProviders() {
+    const providersContent = document.getElementById('professionalsContent');
+    if (!providersContent) return;
+
+    fetch('../backend/api/get-all-providers.php')
+        .then(response => response.json())
+        .then(data => {
+            allProvidersCache = data.data || [];
+            if (data.success && allProvidersCache.length > 0) {
+                // renderProviders(allProvidersCache); // Wait for user selection
+                const providersContent = document.getElementById('professionalsContent');
+                if (providersContent) {
+                    providersContent.innerHTML = '<p class="empty-state">Select a service category above to view available professionals.</p>';
+                }
+            } else {
+                providersContent.innerHTML = '<p class="empty-state">No professionals available at the moment.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading providers:', error);
+            providersContent.innerHTML = '<p class="empty-state">Error loading professionals.</p>';
+        });
+}
+
+function renderProviders(providers) {
+    const providersContent = document.getElementById('professionalsContent');
+    if (!providersContent) return;
+
+    providersContent.innerHTML = '';
+
+    if (providers.length === 0) {
+        providersContent.innerHTML = `
+            <div class="empty-state">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+                <h3>No professionals found</h3>
+                <p>We couldn't find any professionals for this category at the moment.</p>
+                <p style="margin-top: 0.5rem; font-size: 0.9em;">Please check back later or try a different category.</p>
+            </div>
+        `;
+        return;
+    }
+
+    providers.forEach(provider => {
+        const providerCard = document.createElement('div');
+        providerCard.className = 'service-item provider-card';
+
+        providerCard.innerHTML = `
+            <div class="provider-header">
+                <div class="provider-avatar">
+                   ${provider.profile_image ? `<img src="${provider.profile_image}" alt="${provider.full_name}">` : '<div class="avatar-placeholder">' + provider.full_name.charAt(0) + '</div>'}
+                </div>
+                <h3 style="margin-bottom: 0.25rem;">${provider.full_name}</h3>
+                <span class="category-badge">${provider.category || provider.service_name || 'Service'}</span>
+                ${provider.is_verified ? '<div style="margin-top:4px;"><span class="verified-badge">✓ Verified</span></div>' : ''}
+            </div>
+            
+            <div class="provider-stats">
+                <div class="stat">
+                    <span class="label">Experience</span>
+                    <span class="value">${(provider.experience_years && provider.experience_years !== 'null') ? provider.experience_years + ' Years' : 'New Pro'}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Rating</span>
+                    <span class="value" style="display: flex; align-items: center; gap: 2px;">
+                        ${renderStarRating(provider.rating || 0)} 
+                        <span style="font-size: 0.85em; color: #666; margin-left: 4px;">(${parseFloat(provider.rating || 0).toFixed(1)})</span>
+                    </span>
+                </div>
+            </div>
+            
+            <p class="provider-bio">${provider.bio || 'Professional service provider.'}</p>
+            
+            <div class="provider-pricing">
+                ${parseFloat(provider.hourly_rate) > 0
+                ? `<span class="price">₹${parseFloat(provider.hourly_rate).toFixed(0)}<small>/hr</small></span>`
+                : `<span class="price" style="font-size: 1rem; color: #666;">Starts from ₹500<small>/hr</small></span>`}
+            </div>
+            
+            <button class="btn btn-primary" style="width: 100%;" type="button" onclick="openBookingModal(${provider.service_id})">Book Now</button>
+        `;
+        // Note: passing provider.service_id to openBookingModal to pre-select the service.
+        // Ideally we should also pre-select the provider, but the current modal logic needs updating to support provider pre-selection.
+        // For now, this at least gets them to the right service form.
+
+        providersContent.appendChild(providerCard);
+    });
+}
+
+function renderStarRating(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+
+    // Simple text stars for dashboard to avoid SVG complexity/clutter potential or missing defs
+    // But aligning with service-loader means using SVGs.
+    // Let's use simple SVGs inline.
+
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+            html += '<span style="color: #FFD700;">★</span>';
+        } else if (i - 0.5 <= rating) {
+            html += '<span style="color: #FFD700;">★</span>'; // Simpler half star fallback
+        } else {
+            html += '<span style="color: #e5e7eb;">★</span>';
+        }
+    }
+    return html;
 }
 
 // Load provider services
@@ -812,25 +982,50 @@ function showAddServiceModal() {
     // Reset form
     document.getElementById('addServiceForm').reset();
 
-    // Load available service types from backend
-    fetch('../backend/api/services.php') // Using public services endpoint to get categories
-        .then(res => res.json())
-        .then(data => {
-            const select = document.getElementById('newServiceId');
+    const token = localStorage.getItem('token');
+    const select = document.getElementById('newServiceId');
+    select.innerHTML = '<option value="">Loading...</option>';
+
+    // Fetch both provider's existing services and all available services
+    Promise.all([
+        fetch('../backend/api/provider-services.php?token=' + encodeURIComponent(token), {
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(res => res.json()),
+        fetch('../backend/api/services.php').then(res => res.json())
+    ])
+        .then(([providerData, allServicesData]) => {
             select.innerHTML = '<option value="">Select a service...</option>';
 
-            const services = data.services || data.data || [];
-            // Remove duplicates if any
-            const uniqueServices = Array.from(new Map(services.map(s => [s.name, s])).values());
+            const existingServiceIds = new Set();
+            if (providerData.success && providerData.services) {
+                providerData.services.forEach(s => existingServiceIds.add(parseInt(s.service_id)));
+            }
 
-            uniqueServices.forEach(s => {
+            const allServices = allServicesData.services || allServicesData.data || [];
+            // Remove duplicates in allServices just in case, and filter out existing ones
+            const uniqueAvailableServices = Array.from(new Map(allServices.map(s => [s.name, s])).values())
+                .filter(s => !existingServiceIds.has(parseInt(s.id)));
+
+            if (uniqueAvailableServices.length === 0) {
+                select.innerHTML = '<option value="">No more services available to add</option>';
+                return;
+            }
+
+            uniqueAvailableServices.forEach(s => {
                 const option = document.createElement('option');
-                option.value = s.id; // Correct ID reference
+                option.value = s.id;
                 option.textContent = s.name;
+                if (s.base_price) {
+                    option.dataset.rate = s.base_price;
+                }
                 select.appendChild(option);
             });
         })
-        .catch(err => console.error('Error loading service types:', err));
+        .catch(err => {
+            console.error('Error loading service types:', err);
+            select.innerHTML = '<option value="">Error loading services</option>';
+            showNotification('Failed to load services', 'error');
+        });
 
     modal.style.display = 'block';
 }
@@ -844,6 +1039,19 @@ function closeAddServiceModal() {
 document.addEventListener('DOMContentLoaded', () => {
     const addForm = document.getElementById('addServiceForm');
     if (addForm) {
+        // Auto-fill rate on service selection
+        const serviceSelect = document.getElementById('newServiceId');
+        const rateInput = document.getElementById('newHourlyRate');
+
+        if (serviceSelect && rateInput) {
+            serviceSelect.addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption && selectedOption.dataset.rate) {
+                    rateInput.value = selectedOption.dataset.rate;
+                }
+            });
+        }
+
         addForm.addEventListener('submit', function (e) {
             e.preventDefault();
 
@@ -1063,6 +1271,22 @@ function enableProfileEditing() {
     document.getElementById('saveProfileBtn').style.display = 'block';
 }
 
+// Real-time Phone Validation
+document.addEventListener('DOMContentLoaded', function () {
+    const phoneInput = document.getElementById('settingsPhone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function (e) {
+            // Remove non-numeric characters
+            this.value = this.value.replace(/\D/g, '');
+
+            // Limit to 10 digits
+            if (this.value.length > 10) {
+                this.value = this.value.slice(0, 10);
+            }
+        });
+    }
+});
+
 function saveProfile() {
     const name = document.getElementById('settingsName').value;
     const phone = document.getElementById('settingsPhone').value;
@@ -1070,8 +1294,11 @@ function saveProfile() {
 
     const token = localStorage.getItem('token');
 
-    // Removed the original validation for fullName and phone, as per the provided snippet.
-    // If validation is still desired, it should be re-added here, potentially including location.
+    // Phone Validation
+    if (!/^\d{10}$/.test(phone)) {
+        showNotification('Phone number must be exactly 10 digits', 'error');
+        return;
+    }
 
     showLoadingState(true);
 
@@ -1541,7 +1768,10 @@ const originalSwitchPage = window.switchPage; // Backup existing
 window.switchPage = function (pageId) {
     if (pageId === 'schedule') {
         loadSchedule();
+    } else if (pageId === 'transactions') {
+        loadTransactions();
     }
+
     // Call original logic (duplicated here since `switchPage` is defined in scope but easy to just replicate basic logic or assume global)
     // Re-implementing basic switch logic to be safe since `originalSwitchPage` reference might be tricky with hoisting
 
@@ -1555,3 +1785,76 @@ window.switchPage = function (pageId) {
     const activeNavItem = document.querySelector(`[data-page="${pageId}"]`);
     if (activeNavItem) activeNavItem.classList.add('active');
 };
+
+// --- Transaction History ---
+function loadTransactions() {
+    const content = document.getElementById('transactionsContent');
+    if (!content) return;
+
+    content.innerHTML = '<p class="empty-state">Loading transactions...</p>';
+
+    const token = localStorage.getItem('token');
+    fetch('../backend/api/get-transactions.php', {
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                renderTransactions(data.transactions);
+            } else {
+                content.innerHTML = '<p class="empty-state">Failed to load transactions.</p>';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            content.innerHTML = '<p class="empty-state">Error loading transactions.</p>';
+        });
+}
+
+function renderTransactions(transactions) {
+    const content = document.getElementById('transactionsContent');
+    if (!content) return;
+
+    if (!transactions || transactions.length === 0) {
+        content.innerHTML = '<p class="empty-state">No completed transactions found.</p>';
+        return;
+    }
+
+    let html = `
+        <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background:#f9fafb; text-align:left; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding:15px; color: #4b5563; font-weight: 600;">Date</th>
+                        <th style="padding:15px; color: #4b5563; font-weight: 600;">Service</th>
+                        <th style="padding:15px; color: #4b5563; font-weight: 600;">Provider</th>
+                        <th style="padding:15px; color: #4b5563; font-weight: 600; text-align: right;">Amount</th>
+                        <th style="padding:15px; color: #4b5563; font-weight: 600; text-align: center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    transactions.forEach(t => {
+        const date = new Date(t.booking_date).toLocaleDateString();
+        const time = t.booking_time ? new Date('1970-01-01T' + t.booking_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+        html += `
+            <tr style="border-bottom:1px solid #f3f4f6;">
+                <td style="padding:15px;">
+                    <div style="font-weight: 500;">${date}</div>
+                    <div style="font-size: 0.85em; color: #9ca3af;">${time}</div>
+                </td>
+                <td style="padding:15px;">${t.service_name}</td>
+                <td style="padding:15px;">${t.provider_name}</td>
+                <td style="padding:15px; text-align: right; font-weight: bold; color: #10B981;">₹${parseFloat(t.total_amount).toFixed(2)}</td>
+                <td style="padding:15px; text-align: center;">
+                    <span style="background: #D1FAE5; color: #065F46; padding: 4px 8px; borderRadius: 4px; font-size: 0.85em;">Paid</span>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += '</tbody></table></div>';
+    content.innerHTML = html;
+}

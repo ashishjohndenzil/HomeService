@@ -99,32 +99,72 @@
 /* Filters Area */
 .bookings-filters {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    background: white;
-    padding: 1rem;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
+    gap: 1.5rem;
+    /* Match dashboard.css */
+    margin-bottom: 2rem;
+    background: transparent;
+    /* Remove card bg */
+    padding: 0;
+    /* Remove padding */
+    border: none;
+    /* Remove border */
     align-items: center;
+    box-shadow: none;
 }
 
 .bookings-filters input,
 .bookings-filters select {
-    padding: 0.6rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 25px;
     font-size: 0.95rem;
     color: var(--text-dark);
     outline: none;
     transition: border-color 0.2s;
     background-color: #fff;
     font-family: inherit;
+    height: 42px;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .bookings-filters input {
     flex: 1;
-    /* Search bar takes remaining space */
     max-width: 400px;
+    /* Add padding for icon if we had one, but we don't here */
+}
+
+/* Remove outer borders for filters as requested */
+.filter-wrapper {
+    display: flex;
+    border: none;
+    background: white;
+    padding: 0.25rem;
+    border-radius: 25px;
+    /* rounded container */
+    box-shadow: var(--shadow-sm);
+    /* optional: keep shadow or remove if wanted strictly flat */
+}
+
+/* Ensure buttons inside look like tabs/pills if that's the goal, 
+   or just standalone if wrapper has no border */
+.filter-btn {
+    padding: 0.7rem 1.2rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-light);
+    border-radius: 20px;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.filter-btn.active {
+    background-color: var(--secondary-color);
+    color: white;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 .bookings-filters select {
@@ -204,6 +244,17 @@ tr:last-child td {
 .cancel-btn:hover {
     background-color: #fecaca;
     color: #b91c1c;
+}
+
+.verify-btn {
+    background-color: #d1fae5;
+    color: #065f46;
+    /* Green text */
+}
+
+.verify-btn:hover {
+    background-color: #a7f3d0;
+    color: #047857;
 }
 
 .text-muted {

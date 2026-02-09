@@ -9,8 +9,11 @@ require_once '../../config.php';
 // In a real app, you would validate the admin token here.
 
 try {
-    // Select is_active now that it exists
-    $stmt = $pdo->query("SELECT id, full_name, email, user_type, is_active, created_at FROM users ORDER BY created_at DESC");
+    // Select is_active and is_verified (via JOIN)
+    $stmt = $pdo->query("SELECT u.id, u.full_name, u.email, u.user_type, u.is_active, u.created_at, p.is_verified 
+                         FROM users u 
+                         LEFT JOIN providers p ON u.id = p.user_id 
+                         ORDER BY u.created_at DESC");
     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     echo json_encode(['success' => true, 'users' => $users]);

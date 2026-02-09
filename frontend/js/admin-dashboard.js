@@ -20,10 +20,40 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('settingsEmail').value = userData.email;
 
     setupNavigation();
+    setupFilters(); // Initialize filter buttons
     loadStats();
     loadUsers();
     loadAllBookings();
 });
+
+// Setup Filter Buttons
+function setupFilters() {
+    // User Filters
+    const userFilters = document.querySelectorAll('#userTypeFilters .filter-btn');
+    userFilters.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active from all siblings
+            userFilters.forEach(b => b.classList.remove('active'));
+            // Add active to clicked
+            btn.classList.add('active');
+            // Trigger filter
+            filterUsers();
+        });
+    });
+
+    // Booking Filters
+    const bookingFilters = document.querySelectorAll('#bookingStatusFilters .filter-btn');
+    bookingFilters.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active from all siblings
+            bookingFilters.forEach(b => b.classList.remove('active'));
+            // Add active to clicked
+            btn.classList.add('active');
+            // Trigger filter
+            filterBookings();
+        });
+    });
+}
 
 // Navigation Handling
 function setupNavigation() {
@@ -295,21 +325,71 @@ function renderUsers(users) {
         const statusClass = active ? 'active' : 'inactive';
         const statusText = active ? 'Active' : 'Inactive';
 
+        // Verification Badge for Providers
+        let verifiedBadge = '';
+        let verifyBtn = '';
+
+        if (user.user_type === 'provider') {
+            const isVerified = user.is_verified == 1;
+            verifiedBadge = isVerified
+                ? '<span class="admin-badge" style="background-color: #10B981;">✓ Verified</span>'
+                : '<span class="admin-badge" style="background-color: #9CA3AF;">Unverified</span>';
+
+            const btnText = isVerified ? 'Unverify' : 'Verify';
+            const btnClass = isVerified ? 'cancel-btn' : 'verify-btn'; // We'll add verify-btn style
+            const newStatus = isVerified ? 0 : 1;
+
+            verifyBtn = `<button class="action-btn ${btnClass}" onclick="toggleProviderVerification(${user.id}, ${newStatus})" style="margin-left: 5px;">${btnText}</button>`;
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>#${user.id}</td>
-            <td>${user.full_name}</td>
+            <td>${user.full_name} ${verifiedBadge}</td>
             <td>${user.email}</td>
             <td>${user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1)}</td>
             <td><span class="status-badge ${statusClass}" onclick="toggleUserStatus(${user.id}, ${user.is_active})" style="cursor: pointer;">${statusText}</span></td>
             <td>${new Date(user.created_at).toLocaleDateString()}</td>
             <td>
                 <button class="action-btn delete-btn" onclick="deleteUser(${user.id})">Delete</button>
+                ${verifyBtn}
             </td>
         `;
         tbody.appendChild(tr);
     });
 }
+
+async function toggleProviderVerification(userId, newStatus) {
+    const action = newStatus ? 'verify' : 'unverify';
+    if (!confirm(`Are you sure you want to ${action} this provider?`)) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('../backend/api/admin/verify-provider.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ user_id: userId, is_verified: newStatus })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification(`Provider ${action}ed successfully`, 'success');
+            loadUsers(); // Reload list to update UI
+        } else {
+            showNotification(data.message || 'Failed to update status', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error connecting to server', 'error');
+    }
+}
+
+// Make globally available
+window.toggleProviderVerification = toggleProviderVerification;
 
 function renderBookings(bookings) {
     const tbody = document.getElementById('bookingsList');
@@ -343,7 +423,10 @@ function renderBookings(bookings) {
 // Filtering Logic
 function filterUsers() {
     const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-    const typeFilter = document.getElementById('userTypeFilter').value;
+
+    // Get active filter button
+    const activeBtn = document.querySelector('#userTypeFilters .filter-btn.active');
+    const typeFilter = activeBtn ? activeBtn.getAttribute('data-filter') : 'all';
 
     const filtered = allUsers.filter(user => {
         const matchesSearch = user.full_name.toLowerCase().includes(searchTerm) ||
@@ -356,7 +439,9 @@ function filterUsers() {
 }
 
 function filterBookings() {
-    const statusFilter = document.getElementById('bookingStatusFilter').value;
+    // Get active filter button
+    const activeBtn = document.querySelector('#bookingStatusFilters .filter-btn.active');
+    const statusFilter = activeBtn ? activeBtn.getAttribute('data-filter') : 'all';
 
     const filtered = allBookings.filter(booking => {
         return statusFilter === 'all' || booking.status === statusFilter;

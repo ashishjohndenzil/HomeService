@@ -251,6 +251,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->execute([$user_id, $provider_id, $service_id, $booking_date, $booking_time, $description, $address, $total_amount])) {
             // Get the inserted booking ID
             $booking_id = $pdo->lastInsertId();
+            
+
+
             echo json_encode([
                 'success' => true,
                 'message' => 'Booking created successfully',

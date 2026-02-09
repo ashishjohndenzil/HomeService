@@ -11,16 +11,8 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     // Get all services with their average provider rate
     $stmt = $pdo->prepare("
-        SELECT s.*, 
-               COALESCE(AVG(p.hourly_rate), CASE 
-                    WHEN s.id = 1 THEN 500 
-                    WHEN s.id = 2 THEN 600
-                    WHEN s.id = 3 THEN 800
-                    WHEN s.id = 4 THEN 800
-                    WHEN s.id = 5 THEN 1200
-                    WHEN s.id = 6 THEN 700
-                    ELSE 500 
-               END) as average_rate 
+        SELECT s.*, s.base_price,
+               COALESCE(AVG(p.hourly_rate), s.base_price) as average_rate 
         FROM services s 
         LEFT JOIN providers p ON s.id = p.service_id 
         GROUP BY s.id

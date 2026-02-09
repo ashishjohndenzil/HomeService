@@ -117,6 +117,9 @@ try {
     if ($allowed) {
         $updateStmt = $pdo->prepare("UPDATE bookings SET status = ?, updated_at = NOW() WHERE id = ?");
         if ($updateStmt->execute([$newStatus, $bookingId])) {
+            
+
+
             sendResponse([
                 'success' => true,
                 'message' => $message,

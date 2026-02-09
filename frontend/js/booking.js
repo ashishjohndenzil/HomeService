@@ -5,6 +5,9 @@
 
 // Function declarations first (hoisted)
 
+
+
+
 // Create booking modal HTML
 function createBookingModal() {
     const modalHTML = `
@@ -26,7 +29,6 @@ function createBookingModal() {
                         <div class="form-group" style="position: relative;">
                             <label for="bookingAddress">Service Address</label>
                             <textarea id="bookingAddress" name="address" placeholder="Start typing your address..." rows="3" required autocomplete="off"></textarea>
-                            <ul id="bookingAddressSuggestions" class="suggestions-list" style="display: none; position: absolute; top: 100%; width: 100%; left: 0; background: white; border: 1px solid #ddd; max-height: 150px; overflow-y: auto; z-index: 2000; list-style: none; padding: 0; margin: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></ul>
                         </div>
                         
                         <div class="form-row">
@@ -122,6 +124,11 @@ function setupBookingForm() {
     const serviceSelect = document.getElementById('serviceSelect');
     const durationInput = document.getElementById('duration');
     const totalInput = document.getElementById('estimatedAmount');
+
+    // Initialize Autocomplete (Embedded Version)
+    if (typeof window.initLocationAutocomplete === 'function') {
+        window.initLocationAutocomplete('bookingAddress');
+    }
 
     function calculateTotal() {
         const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
@@ -230,12 +237,7 @@ function setupBookingForm() {
             durationInput.addEventListener('input', calculateTotal);
         }
 
-        // Address Autocomplete Logic using shared script
-        if (typeof window.setupAddressAutocomplete === 'function') {
-            setupAddressAutocomplete('bookingAddress', 'bookingAddressSuggestions');
-        } else {
-            console.warn('location-autocomplete.js not loaded. Address suggestions disabled.');
-        }
+
     }
 
     form.addEventListener('submit', function (e) {
