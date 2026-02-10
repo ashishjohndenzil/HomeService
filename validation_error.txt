@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "C:\xampp\htdocs\HomeService\test_validation.py", line 53, in test_validation
+    WebDriverWait(driver, 10).until(lambda d: "dashboard" in d.current_url or "login" in d.current_url)
+  File "C:\Users\LENOVO\AppData\Local\Programs\Python\Python311\Lib\site-packages\selenium\webdriver\support\wait.py", line 121, in until
+    raise TimeoutException(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: 
+

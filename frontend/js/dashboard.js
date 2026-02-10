@@ -1811,6 +1811,7 @@ function loadTransactions() {
         });
 }
 
+
 function renderTransactions(transactions) {
     const content = document.getElementById('transactionsContent');
     if (!content) return;
@@ -1857,4 +1858,263 @@ function renderTransactions(transactions) {
 
     html += '</tbody></table></div>';
     content.innerHTML = html;
+}
+
+/* ==================== NOTIFICATIONS LOGIC ==================== */
+let notificationPollInterval;
+let lastSeenNotificationId = 0; // Track the latest ID to detect new ones
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialize Notifications
+    initNotifications();
+});
+
+function initNotifications() {
+    const bellWrapper = document.getElementById('notificationWrapper');
+    const dropdown = document.getElementById('notificationDropdown');
+
+    // Create Toast Container if not exists
+    if (!document.querySelector('.toast-container')) {
+        const toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+
+    if (!bellWrapper || !dropdown) return;
+
+    // Toggle Dropdown
+    bellWrapper.addEventListener('click', function (e) {
+        // Prevent closing when clicking inside
+        if (e.target.closest('.notification-dropdown')) return;
+
+        e.stopPropagation();
+        dropdown.classList.toggle('active');
+
+        // If opening, fetch latest
+        if (dropdown.classList.contains('active')) {
+            fetchNotifications(false);  // Don't show toast on manual open
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!bellWrapper.contains(e.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+
+    // Initial Fetch (don't show toast on first load)
+    fetchNotifications(false);
+
+    // Start Polling (every 30 seconds)
+    if (notificationPollInterval) clearInterval(notificationPollInterval);
+    notificationPollInterval = setInterval(() => fetchNotifications(true), 5000); // Poll every 5 seconds
+}
+
+function fetchNotifications(allowToast = false) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    fetch('../backend/api/get-notifications.php', {
+        headers: {
+            'Authorization': 'Bearer ' + token
+        }
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                updateNotificationUI(data.notifications, data.unread_count);
+
+                // Check for new notifications to show Toast
+                if (allowToast && data.notifications.length > 0) {
+                    const latest = data.notifications[0];
+
+                    // If it's different and newer than what we had, show it.
+                    // Ensure numeric comparison to handle string IDs from backend
+                    const latestId = parseInt(latest.id);
+                    const lastId = parseInt(lastSeenNotificationId);
+
+                    if (latestId > lastId) {
+                        console.log('New notification detected!', latest);
+                        const icon = getNotificationIcon(latest.type);
+                        const title = getNotificationTitle(latest.type);
+                        showToast(title, latest.message, icon, latest);
+
+                        // Refresh Dashboard Data (Bookings, Requests, Stats)
+                        console.log('Refreshing dashboard data...');
+                        loadBookings();
+                    }
+                }
+
+                if (data.notifications.length > 0) {
+                    lastSeenNotificationId = data.notifications[0].id;
+                }
+            }
+        })
+        .catch(err => console.error('Error fetching notifications:', err));
+}
+
+function getNotificationIcon(type) {
+    if (type.includes('booking')) return '📅';
+    if (type.includes('cancel')) return '❌';
+    if (type.includes('confirm')) return '✅';
+    if (type.includes('complete')) return '🎉';
+    if (type.includes('chat')) return '💬';
+    return '🔔';
+}
+
+function getNotificationTitle(type) {
+    if (type.includes('booking')) return 'Booking Update';
+    if (type.includes('chat')) return 'New Message';
+    if (type.includes('cancel')) return 'Booking Cancelled';
+    if (type.includes('confirm')) return 'Booking Confirmed';
+    return 'Notification';
+}
+
+function updateNotificationUI(notifications, unreadCount) {
+    const badge = document.getElementById('notificationBadge');
+    const list = document.getElementById('notificationList');
+
+    // Update Badge
+    if (unreadCount > 0) {
+        badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+        badge.style.display = 'block';
+    } else {
+        badge.style.display = 'none';
+    }
+
+    // Update List
+    if (!notifications || notifications.length === 0) {
+        list.innerHTML = '<li class="notification-empty">No notifications yet</li>';
+        return;
+    }
+
+    list.innerHTML = '';
+
+    notifications.forEach(notif => {
+        const li = document.createElement('li');
+        li.className = `notification-item ${notif.is_read == 0 ? 'unread' : ''}`;
+        li.onclick = (e) => handleNotificationClick(e, notif);
+
+        const date = new Date(notif.created_at);
+        const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const icon = getNotificationIcon(notif.type);
+
+        li.innerHTML = `
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+                <div style="font-size:1.2rem; line-height:1;">${icon}</div>
+                <div>
+                    <div class="notification-message">${escapeHtml(notif.message)}</div>
+                    <div class="notification-time">${timeStr}</div>
+                </div>
+            </div>
+        `;
+        list.appendChild(li);
+    });
+}
+
+function showToast(title, message, icon, notification = null) {
+    const container = document.querySelector('.toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${escapeHtml(message)}</div>
+        </div>
+        <button class="toast-close" onclick="event.stopPropagation(); this.parentElement.remove()">×</button>
+    `;
+
+    // Make toast clickable if notification object is provided
+    if (notification) {
+        toast.style.cursor = 'pointer';
+        toast.onclick = (e) => {
+            handleNotificationClick(e, notification);
+            toast.remove();
+        };
+    }
+
+    container.appendChild(toast);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        toast.addEventListener('transitionend', () => toast.remove());
+    }, 5000);
+}
+
+
+function handleNotificationClick(event, notification) {
+    event.stopPropagation();
+
+    // Mark as read
+    if (notification.is_read == 0) {
+        markNotificationRead(notification.id);
+    }
+
+    // If booking related, switch to bookings tab
+    if (notification.type.includes('booking')) {
+        if (typeof switchPage === 'function') {
+            switchPage('bookings');
+        }
+        document.getElementById('notificationDropdown').classList.remove('active');
+    }
+
+    // If chat related, open chat modal
+    if (notification.type === 'chat_message') {
+        if (typeof openChat === 'function') {
+            // notification.related_id holds the sender_id (contact_id)
+            openChat(notification.related_id, 'Chat');
+        }
+        document.getElementById('notificationDropdown').classList.remove('active');
+    }
+}
+
+function markNotificationRead(id) {
+    const token = localStorage.getItem('token');
+    fetch('../backend/api/mark-notification-read.php', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ notification_id: id })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                fetchNotifications(false); // Refresh UI
+            }
+        });
+}
+
+function markAllNotificationsRead() {
+    const token = localStorage.getItem('token');
+    fetch('../backend/api/mark-notification-read.php', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ mark_all: true })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                fetchNotifications(false); // Refresh UI
+            }
+        });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }

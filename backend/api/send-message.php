@@ -60,6 +60,28 @@ try {
     ");
     $stmt->execute([$sender_id, $receiver_id, $booking_id, $message]);
 
+    // --- Notification Logic ---
+    // 1. Get Sender Name
+    $stmtUser = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+    $stmtUser->execute([$sender_id]);
+    $sender = $stmtUser->fetch();
+    $sender_name = $sender ? $sender['full_name'] : 'User';
+
+    // 2. Check for existing UNREAD chat notification from this sender
+    $stmtCheck = $pdo->prepare("SELECT id FROM notifications WHERE user_id = ? AND type = 'chat_message' AND related_id = ? AND is_read = 0");
+    $stmtCheck->execute([$receiver_id, $sender_id]);
+    $existing = $stmtCheck->fetch();
+
+    if ($existing) {
+        // Update timestamp to bump it to top
+        $stmtUpdate = $pdo->prepare("UPDATE notifications SET created_at = NOW(), message = ? WHERE id = ?");
+        $stmtUpdate->execute(["New message from " . $sender_name, $existing['id']]);
+    } else {
+        // Insert new notification
+        $stmtInsert = $pdo->prepare("INSERT INTO notifications (user_id, type, message, related_id) VALUES (?, 'chat_message', ?, ?)");
+        $stmtInsert->execute([$receiver_id, "New message from " . $sender_name, $sender_id]);
+    }
+
     echo json_encode(['success' => true, 'message' => 'Message sent']);
 
 } catch (PDOException $e) {

@@ -241,18 +241,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // Create the booking
+    $transaction_id = $data['transaction_id'] ?? null;
+    $payment_method = $transaction_id ? 'upi' : 'cash';
+    $payment_status = $transaction_id ? 'pending' : 'pending'; // Admin will verify
+
+    // Update query to include payment details
         $stmt = $pdo->prepare("
             INSERT INTO bookings 
-            (customer_id, provider_id, service_id, booking_date, booking_time, description, address, total_amount, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+            (customer_id, provider_id, service_id, booking_date, booking_time, description, address, total_amount, status, transaction_id, payment_method, payment_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
         ");
         
-        if ($stmt->execute([$user_id, $provider_id, $service_id, $booking_date, $booking_time, $description, $address, $total_amount])) {
+        if ($stmt->execute([$user_id, $provider_id, $service_id, $booking_date, $booking_time, $description, $address, $total_amount, $transaction_id, $payment_method, $payment_status])) {
             // Get the inserted booking ID
             $booking_id = $pdo->lastInsertId();
             
 
+
+            // Send Notification to Provider
+            require_once 'notification_helper.php';
+            // Get provider user_id
+            $stmtProvParams = $pdo->prepare("SELECT user_id FROM providers WHERE id = ?");
+            $stmtProvParams->execute([$provider_id]);
+            $provUser = $stmtProvParams->fetch();
+            
+            if ($provUser) {
+                 createNotification($provUser['user_id'], 'booking_new', "New booking request for " . $booking_date . " at " . $booking_time, $booking_id);
+            }
 
             echo json_encode([
                 'success' => true,

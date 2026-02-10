@@ -120,7 +120,26 @@ try {
             
 
 
-            sendResponse([
+            // Send Notification
+            require_once 'notification_helper.php';
+            
+            // If user updating is provider, notify customer
+            if ($userType === 'provider') {
+                 createNotification($booking['customer_id'], 'booking_update', "Your booking status has been updated to: " . $newStatus, $bookingId);
+            }
+            
+            // If user updating is customer (cancellation), notify provider
+            if ($userType === 'customer') {
+                 // Get provider user id
+                 $stmtP = $pdo->prepare("SELECT user_id FROM providers WHERE id = ?");
+                 $stmtP->execute([$booking['provider_id']]);
+                 $pUser = $stmtP->fetch();
+                 if ($pUser) {
+                     createNotification($pUser['user_id'], 'booking_update', "Booking #" . $bookingId . " was cancelled by the customer", $bookingId);
+                 }
+            }
+
+            echo json_encode([
                 'success' => true,
                 'message' => $message,
                 'new_status' => $newStatus
@@ -130,9 +149,27 @@ try {
         }
     }
 
+
+    // Helper function for sending response if not exists
+    if (!function_exists('sendResponse')) {
+        function sendResponse($data, $code = 200) {
+            http_response_code($code);
+            echo json_encode($data);
+            exit;
+        }
+    }
+    
+    if (!function_exists('handleError')) {
+        function handleError($message, $code = 400) {
+            sendResponse(['success' => false, 'error' => $message], $code);
+        }
+    }
+
 } catch (PDOException $e) {
-    handleError('Database error: ' . $e->getMessage(), 500);
+    http_response_code(500); // Manually handle here if helpers fail
+    echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
 } catch (Exception $e) {
-    handleError('Error: ' . $e->getMessage(), 500);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Error: ' . $e->getMessage()]);
 }
 ?>

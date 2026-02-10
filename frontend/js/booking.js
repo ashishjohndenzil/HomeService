@@ -14,57 +14,83 @@ function createBookingModal() {
         <div id="bookingModal" class="booking-modal" style="display: none;">
             <div class="booking-modal-content">
                 <div class="booking-modal-header">
-                    <h2>Book a Service</h2>
+                    <h2 id="modalTitle">Book a Service</h2>
                     <button type="button" class="close-btn" onclick="closeBookingModal()">&times;</button>
                 </div>
                 <div class="booking-modal-body">
-                    <form id="bookingForm">
-                        <div class="form-group">
-                            <label for="serviceSelect">Service</label>
-                            <select id="serviceSelect" name="service_id" required>
-                                <option value="">Select a service...</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group" style="position: relative;">
-                            <label for="bookingAddress">Service Address</label>
-                            <textarea id="bookingAddress" name="address" placeholder="Start typing your address..." rows="3" required autocomplete="off"></textarea>
-                        </div>
-                        
-                        <div class="form-row">
+                    <div id="booking-step-form">
+                        <form id="bookingForm">
                             <div class="form-group">
-                                <label for="bookingDate">Date</label>
-                                <input type="date" id="bookingDate" name="booking_date" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="bookingTime">Time Slot</label>
-                                <select id="bookingTime" name="booking_time" required>
-                                    <option value="">Select a time...</option>
+                                <label for="serviceSelect">Service</label>
+                                <select id="serviceSelect" name="service_id" required>
+                                    <option value="">Select a service...</option>
                                 </select>
                             </div>
-                        </div>
 
-                        <div class="form-group">
-                            <label for="description">Description (Optional)</label>
-                            <textarea id="description" name="description" placeholder="Describe your service needs..." rows="3"></textarea>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="duration">Duration (Hours)</label>
-                                <input type="number" id="duration" name="duration" min="1" step="0.5" value="1" required>
+                            <div class="form-group" style="position: relative;">
+                                <label for="bookingAddress">Service Address</label>
+                                <textarea id="bookingAddress" name="address" placeholder="Start typing your address..." rows="3" required autocomplete="off"></textarea>
                             </div>
-                            <div class="form-group">
-                                <label for="estimatedAmount">Estimated Amount (₹)</label>
-                                <input type="number" id="estimatedAmount" name="total_amount" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="bookingDate">Date</label>
+                                    <input type="date" id="bookingDate" name="booking_date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="bookingTime">Time Slot</label>
+                                    <select id="bookingTime" name="booking_time" required>
+                                        <option value="">Select a time...</option>
+                                    </select>
+                                </div>
                             </div>
+
+                            <div class="form-group">
+                                <label for="description">Description (Optional)</label>
+                                <textarea id="description" name="description" placeholder="Describe your service needs..." rows="3"></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="duration">Duration (Hours)</label>
+                                    <input type="number" id="duration" name="duration" min="1" step="0.5" value="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="estimatedAmount">Estimated Amount (₹)</label>
+                                    <input type="number" id="estimatedAmount" name="total_amount" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="closeBookingModal()">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="proceedToPayBtn">Proceed to Pay</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="booking-step-payment" style="display:none; text-align:center;">
+                        <h3>Scan & Pay</h3>
+                        <p>Scan the QR code with any UPI App (GPay, PhonePe, Paytm)</p>
+                        
+                        <div id="qrCodeContainer" style="margin: 20px 0;">
+                            <img id="paymentQrCode" src="" alt="Payment QR Code" style="width: 200px; height: 200px; border: 1px solid #ddd; padding: 10px;">
                         </div>
 
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" onclick="closeBookingModal()">Cancel</button>
-                            <button type="submit" class="btn btn-primary" id="confirmBookingBtn">Confirm Booking</button>
+                        <div class="amount-display" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 15px;">
+                            Amount: ₹<span id="payAmountDisplay">0.00</span>
                         </div>
-                    </form>
+
+                        <div class="form-group" style="text-align: left;">
+                            <label>Transaction ID / UTR <span style="color:red">*</span></label>
+                            <input type="text" id="transactionId" placeholder="Enter 12-digit UTR number" required style="width:100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                            <small style="color: #666;">Enter the UTR number from your payment app after payment.</small>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" id="backToBookingBtn" class="btn btn-secondary" style="flex:1;">Back</button>
+                            <button type="button" id="confirmPaymentBtn" class="btn btn-primary" style="flex:1;">Confirm Payment</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -74,7 +100,9 @@ function createBookingModal() {
     if (!document.getElementById('bookingModal')) {
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         setupBookingForm();
-        setupModalClickHandler();
+        if (typeof setupModalClickHandler === 'function') {
+            setupModalClickHandler();
+        }
     }
 }
 
@@ -120,17 +148,32 @@ function loadServices() {
 
 // Setup booking form submission and interactions
 function setupBookingForm() {
-    const form = document.getElementById('bookingForm');
     const serviceSelect = document.getElementById('serviceSelect');
     const durationInput = document.getElementById('duration');
     const totalInput = document.getElementById('estimatedAmount');
 
-    // Initialize Autocomplete (Embedded Version)
+    // Payment UI Elements
+    const bookingFormDiv = document.getElementById('booking-step-form');
+    const paymentDiv = document.getElementById('booking-step-payment');
+    const proceedBtn = document.getElementById('proceedToPayBtn');
+    const backBtn = document.getElementById('backToBookingBtn');
+    const confirmBtn = document.getElementById('confirmPaymentBtn');
+    const transactionInput = document.getElementById('transactionId');
+    const payAmountDisplay = document.getElementById('payAmountDisplay');
+    const qrImage = document.getElementById('paymentQrCode');
+
+    // Merchant Config - UPDATE THIS
+    const MERCHANT_UPI_ID = 'ashishyt100@oksbi';
+    const MERCHANT_NAME = 'HomeService';
+
+    // Initialize Autocomplete (Global Version)
     if (typeof window.initLocationAutocomplete === 'function') {
         window.initLocationAutocomplete('bookingAddress');
     }
 
     function calculateTotal() {
+        if (!serviceSelect || !durationInput) return 0;
+
         const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
         const rate = selectedOption ? parseFloat(selectedOption.dataset.rate) : 0;
         const duration = parseFloat(durationInput.value) || 0;
@@ -138,8 +181,10 @@ function setupBookingForm() {
         if (rate > 0 && duration > 0) {
             const total = rate * duration;
             totalInput.value = total.toFixed(2);
+            return total;
         } else {
             totalInput.value = '';
+            return 0;
         }
     }
 
@@ -148,25 +193,12 @@ function setupBookingForm() {
         const serviceId = document.getElementById('serviceSelect').value;
         const timeSelect = document.getElementById('bookingTime');
 
-        if (!dateVal) {
-            timeSelect.innerHTML = '<option value="">Select a time...</option>';
-            return;
-        }
+        if (!dateVal || !serviceId) return;
 
         timeSelect.innerHTML = '<option value="">Loading slots...</option>';
         timeSelect.disabled = true;
 
-        // Determine provider ID if pre-selected (hacky: store in modal dataset or assume service generic)
-        // For now, pass service_id to finding matching providers
-
-        const params = new URLSearchParams({
-            date: dateVal,
-            service_id: serviceId
-        });
-
-        // If we had a specific provider selected in context, we would pass it. 
-        // Current openBookingModal flow doesn't strictly store providerId in DOM, 
-        // but let's assume standard flow relies on Service mainly.
+        const params = new URLSearchParams({ date: dateVal, service_id: serviceId });
 
         fetch(`../backend/api/get-available-slots.php?${params.toString()}`)
             .then(res => res.json())
@@ -176,40 +208,21 @@ function setupBookingForm() {
 
                 if (data.success && data.slots.length > 0) {
                     data.slots.forEach(slot => {
-                        // Format time for display (HH:MM:SS -> 12h AM/PM)
                         const [hours, minutes] = slot.split(':');
                         const date = new Date();
                         date.setHours(parseInt(hours), parseInt(minutes));
+                        const displayTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-                        const displayTime = date.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                        });
-
-                        // Check if time is in past for today
+                        // Past check logic (simplified)
                         const now = new Date();
                         const checkDate = new Date(dateVal + 'T' + slot);
-
-                        // If selected date is today, hide past slots with 1 hour buffer
-                        if (checkDate.toDateString() === now.toDateString()) {
-                            if (checkDate.getHours() <= now.getHours() + 1) {
-                                return;
-                            }
-                        }
+                        if (checkDate.toDateString() === now.toDateString() && checkDate.getHours() <= now.getHours() + 1) return;
 
                         const option = document.createElement('option');
                         option.value = slot;
                         option.textContent = displayTime;
                         timeSelect.appendChild(option);
                     });
-                }
-
-                if (timeSelect.options.length <= 1) {
-                    const option = document.createElement('option');
-                    option.textContent = "No slots available";
-                    option.disabled = true;
-                    timeSelect.appendChild(option);
                 }
             })
             .catch(err => {
@@ -218,32 +231,142 @@ function setupBookingForm() {
             });
     }
 
-    if (form) {
-        // Date change listener
-        const dateInput = document.getElementById('bookingDate');
-        if (dateInput) {
-            dateInput.addEventListener('change', updateTimeSlots);
-            // Also run on init to set initial state
-            updateTimeSlots();
-        }
-
-        if (serviceSelect) {
-            serviceSelect.addEventListener('change', function () {
-                calculateTotal();
-                updateTimeSlots();
-            });
-        }
-        if (durationInput) {
-            durationInput.addEventListener('input', calculateTotal);
-        }
-
-
+    // Attach Listeners
+    if (serviceSelect) {
+        serviceSelect.addEventListener('change', () => { calculateTotal(); updateTimeSlots(); });
+    }
+    if (durationInput) {
+        durationInput.addEventListener('input', calculateTotal);
+    }
+    const dateInput = document.getElementById('bookingDate');
+    if (dateInput) {
+        dateInput.addEventListener('change', updateTimeSlots);
     }
 
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        submitBooking();
-    });
+    // --- PAYMENT HANDLERS ---
+
+    if (proceedBtn) {
+        proceedBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            // Validate inputs
+            const address = document.getElementById('bookingAddress').value;
+            const date = document.getElementById('bookingDate').value;
+            const time = document.getElementById('bookingTime').value;
+
+            if (!serviceSelect.value || !address || !date || !time) {
+                showBookingNotification('Please fill all required fields.', 'error');
+                return;
+            }
+
+            const amount = calculateTotal();
+            if (amount <= 0) {
+                showBookingNotification('Invalid amount.', 'error');
+                return;
+            }
+
+            // Generate QR
+            const upiLink = `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${amount}&tn=BookingPayment&cu=INR`;
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiLink)}`;
+
+            qrImage.src = qrApiUrl;
+            payAmountDisplay.textContent = amount.toFixed(2);
+
+            // Show Payment Step
+            bookingFormDiv.style.display = 'none';
+            paymentDiv.style.display = 'block';
+            document.getElementById('modalTitle').textContent = 'Complete Payment';
+
+            // Hide header close button to force back button use? Optional.
+        });
+    }
+
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            paymentDiv.style.display = 'none';
+            bookingFormDiv.style.display = 'block';
+            document.getElementById('modalTitle').textContent = 'Book a Service';
+        });
+    }
+
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+            const transactionId = transactionInput.value.trim();
+            if (!transactionId || transactionId.length < 8) {
+                showBookingNotification('Please enter a valid Transaction ID', 'error');
+                return;
+            }
+
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Verifying...';
+
+            await submitBookingRaw(transactionId);
+
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm Payment';
+        });
+    }
+}
+
+// New helper to submit without form event default logic
+async function submitBookingRaw(transactionId) {
+    const token = localStorage.getItem('token');
+    const form = document.getElementById('bookingForm');
+    const formData = new FormData(form);
+
+    // Sanitize date to YYYY-MM-DD ensuring backend compatibility
+    let rawDate = formData.get('booking_date');
+
+    if (rawDate && !/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+        const d = new Date(rawDate);
+        if (!isNaN(d.getTime())) {
+            rawDate = d.toISOString().split('T')[0];
+        } else {
+            showBookingNotification('Invalid date selected. Please pick a date from the calendar.', 'error');
+            // Reset button state since we return early
+            const confirmBtn = document.getElementById('confirmPaymentBtn');
+            if (confirmBtn) {
+                confirmBtn.textContent = 'Confirm Payment';
+                confirmBtn.disabled = false;
+            }
+            return;
+        }
+    }
+
+    const bookingData = {
+        service_id: parseInt(formData.get('service_id')),
+        booking_date: rawDate,
+        booking_time: formData.get('booking_time'),
+        description: formData.get('description'),
+        address: formData.get('address'),
+        total_amount: parseFloat(document.getElementById('estimatedAmount').value),
+        transaction_id: transactionId
+    };
+
+    try {
+        const res = await fetch('../backend/api/create-booking.php', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bookingData)
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            showBookingNotification('Booking Successful! Pending Verification.', 'success');
+            closeBookingModal();
+            // Refresh logic
+            if (typeof loadCustomerBookings === 'function') loadCustomerBookings();
+        } else {
+            showBookingNotification(data.error || 'Booking Failed', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showBookingNotification('Network Error', 'error');
+    }
 }
 
 

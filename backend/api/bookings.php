@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $params[] = $status;
             }
             
-            $query .= " ORDER BY b.booking_date DESC, b.booking_time DESC";
+            $query .= " ORDER BY b.created_at DESC";
 
             
             $stmt = $pdo->prepare($query);
@@ -152,6 +152,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $params[] = $status;
             }
             
+
+            $query .= " ORDER BY b.created_at DESC";
 
             
             $stmt = $pdo->prepare($query);
