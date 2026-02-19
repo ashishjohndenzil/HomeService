@@ -86,6 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     u.full_name as provider_name,
                     u.email as provider_email,
                     b.address as customer_location,
+                    b.payment_method,
+                    b.transaction_id,
+                    p.hourly_rate,
                     r.rating as user_rating,
                     r.comment as user_review
                 FROM bookings b
@@ -103,8 +106,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $query .= " AND b.status = ?";
                 $params[] = $status;
             }
+
+            // Calendar Optimization
+            if (isset($_GET['month']) && isset($_GET['year'])) {
+                $query .= " AND MONTH(b.booking_date) = ? AND YEAR(b.booking_date) = ?";
+                $params[] = intval($_GET['month']);
+                $params[] = intval($_GET['year']);
+            }
             
-            $query .= " ORDER BY b.created_at DESC";
+            $query .= " ORDER BY b.booking_date ASC";
 
             
             $stmt = $pdo->prepare($query);
@@ -151,10 +161,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $query .= " AND b.status = ?";
                 $params[] = $status;
             }
+
+            // Calendar Optimization: Filter by Month/Year if provided
+            if (isset($_GET['month']) && isset($_GET['year'])) {
+                $query .= " AND MONTH(b.booking_date) = ? AND YEAR(b.booking_date) = ?";
+                $params[] = intval($_GET['month']);
+                $params[] = intval($_GET['year']);
+            }
             
-
-            $query .= " ORDER BY b.created_at DESC";
-
+            $query .= " ORDER BY b.booking_date ASC, b.booking_time ASC";
             
             $stmt = $pdo->prepare($query);
             $stmt->execute($params);

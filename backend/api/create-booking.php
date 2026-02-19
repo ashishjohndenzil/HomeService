@@ -1,4 +1,3 @@
-
 <?php
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -73,7 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $total_amount = floatval($data['total_amount']);
     $description = $data['description'] ?? '';
     $address = trim($data['address']);
-    $provider_id = isset($data['provider_id']) ? intval($data['provider_id']) : null;
+    $provider_id = isset($data['provider_id']) ? intval($data['provi
+    \
+    der_id']) : null;
     
     // Validate date and time
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $booking_date)) {
@@ -101,7 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$provider_id) {
             // Smart Provider Matching: Prefer providers in the same location
             // We'll extract the city/area from the address (simple string matching for now)
-            // Ideally, we'd use geospatial data, but text matching on the 'location' column is a good start.
             
             $stmt = $pdo->prepare("
                 SELECT p.id, u.location 
@@ -110,15 +110,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE p.service_id = ?
             ");
             $stmt->execute([$service_id]);
-            $providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $all_providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            if (empty($providers)) {
+            if (empty($all_providers)) {
                 http_response_code(400);
                 echo json_encode(['error' => 'No providers available for this service']);
                 exit;
             }
 
-            // Simple scoring system
+            // Filter for Availability FIRST
+            $available_providers = [];
+            $booking_start = new DateTime("$booking_date $booking_time");
+            $booking_end = clone $booking_start;
+            // Assume 1 hour duration if not set
+            $duration_chk = isset($data['duration']) ? floatval($data['duration']) : 1;
+            $booking_end->modify("+$duration_chk hours");
+            
+            $day_name = date('l', strtotime($booking_date));
+
+            foreach ($all_providers as $prov) {
+                $pid = $prov['id'];
+
+                // 1. Check Schedule
+                $stmtSched = $pdo->prepare("SELECT start_time, end_time, is_active FROM provider_schedule WHERE provider_id = ? AND day_of_week = ?");
+                $stmtSched->execute([$pid, $day_name]);
+                $sched = $stmtSched->fetch();
+
+                if ($sched) {
+                    if (!$sched['is_active']) continue;
+                    if ($booking_time < $sched['start_time'] || $booking_time >= $sched['end_time']) continue; // varied logic
+                    // Strict overlap check for schedule not fully implemented in get-slots either, assuming standard hours if no strict match?
+                    // Let's stick to the booking check primarily, as schedule validation happens later too.
+                    // But we should at least check if they are working that day.
+                } 
+                
+                // 2. Check Bookings
+                // Check if this specific provider has a conflict
+                $stmtChk = $pdo->prepare("
+                    SELECT count(*) as cnt 
+                    FROM bookings 
+                    WHERE provider_id = ? 
+                    AND booking_date = ? 
+                    AND status IN ('pending', 'confirmed', 'completed', 'in_progress')
+                    AND (
+                        (booking_time < ? AND ADDTIME(booking_time, '01:00:00') > ?)
+                        OR (booking_time >= ? AND booking_time < ?) 
+                    )
+                ");
+                // The above query is complex with ADDTIME. Let's simplify:
+                // Existing booking starts at B_START. Ends at B_END (B_START + 1hr).
+                // Request starts at R_START. Ends at R_END.
+                // Overlap if: B_START < R_END AND B_END > R_START
+                
+                $r_start = $booking_start->format('H:i:s');
+                $r_end = $booking_end->format('H:i:s');
+                
+                // We'll just fetch all bookings for this provider on this day and check in PHP to be safe/consistent
+                $stmtAuth = $pdo->prepare("SELECT booking_time FROM bookings WHERE provider_id = ? AND booking_date = ? AND status IN ('pending', 'confirmed', 'completed', 'in_progress')");
+                $stmtAuth->execute([$pid, $booking_date]);
+                $p_bookings = $stmtAuth->fetchAll(PDO::FETCH_COLUMN);
+                
+                $is_busy = false;
+                foreach ($p_bookings as $b_time) {
+                    $b_start_dt = new DateTime("$booking_date $b_time");
+                    $b_end_dt = clone $b_start_dt;
+                    $b_end_dt->modify("+1 hour"); // Assume existing bookings are 1h
+                    
+                    if ($booking_start < $b_end_dt && $booking_end > $b_start_dt) {
+                        $is_busy = true;
+                        break;
+                    }
+                }
+                
+                if (!$is_busy) {
+                    $available_providers[] = $prov;
+                }
+            }
+
+            if (empty($available_providers)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'All providers are busy at this time. Please choose another slot.']);
+                exit;
+            }
+
+            // Simple scoring system on AVAILABLE providers
             $best_provider_id = null;
             $max_score = -1;
             
@@ -126,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // e.g. "123 Main St, New York, NY" -> ["123 main st", "new york", "ny"]
             $booking_parts = array_map('trim', explode(',', strtolower($address)));
 
-            foreach ($providers as $prov) {
+            foreach ($available_providers as $prov) {
                 $score = 0;
                 $prov_loc = strtolower($prov['location'] ?? '');
                 
@@ -161,8 +236,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $provider_id = $best_provider_id;
 
             if (!$provider_id) {
-                // Fallback: Pick random
-                 $provider_id = $providers[array_rand($providers)]['id'];
+                // Fallback: Pick random from available
+                 $provider_id = $available_providers[array_rand($available_providers)]['id'];
             }
         } else {
             // Validate provider offers this service
@@ -222,7 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 FROM bookings 
                 WHERE provider_id = ? 
                 AND booking_date = ? 
-                AND status IN ('pending', 'confirmed')
+                AND status IN ('pending', 'confirmed', 'completed', 'in_progress')
             ");
             $stmt->execute([$provider_id, $booking_date]);
             $existing_bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);

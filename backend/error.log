@@ -105,3 +105,13 @@ Stack trace:
 #0 C:\xampp\htdocs\HomeService\backend\api\view-notifications-db.php(4): PDO->query('SELECT * FROM n...')
 #1 {main}
   thrown in C:\xampp\htdocs\HomeService\backend\api\view-notifications-db.php on line 4
+[18-Feb-2026 18:18:05 Europe/Berlin] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`home_service_booking`.`user_sessions`, CONSTRAINT `user_sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE) in C:\xampp\htdocs\HomeService\backend\api\test_booking_flow.php:25
+Stack trace:
+#0 C:\xampp\htdocs\HomeService\backend\api\test_booking_flow.php(25): PDOStatement->execute(Array)
+#1 {main}
+  thrown in C:\xampp\htdocs\HomeService\backend\api\test_booking_flow.php on line 25
+[18-Feb-2026 18:20:00 Europe/Berlin] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`home_service_booking`.`user_sessions`, CONSTRAINT `user_sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE) in C:\xampp\htdocs\HomeService\backend\api\test_booking_flow.php:29
+Stack trace:
+#0 C:\xampp\htdocs\HomeService\backend\api\test_booking_flow.php(29): PDOStatement->execute(Array)
+#1 {main}
+  thrown in C:\xampp\htdocs\HomeService\backend\api\test_booking_flow.php on line 29

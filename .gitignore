@@ -3,31 +3,25 @@
 .env.local
 .env.*.local
 
-# Configuration files with secrets
-backend/api/cashfree_config.php
-backend/config.php
-
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Node modules (if applicable)
-node_modules/
-package-lock.json
-
-# System files
+# OS
 .DS_Store
 Thumbs.db
 
-# Upload files
-backend/uploads/*
-!backend/uploads/.gitkeep
+# Dependencies
+node_modules/
+vendor/
 
 # Logs
 *.log
+error.log
 
-# Cache
-__pycache__/
-*.pyc
+# Sensitive files
+backend/api/cashfree_config.php
+backend/config.php

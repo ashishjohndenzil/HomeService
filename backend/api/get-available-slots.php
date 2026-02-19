@@ -112,7 +112,7 @@ try {
                 SELECT COUNT(*) FROM bookings 
                 WHERE provider_id = ? 
                 AND booking_date = ? 
-                AND status IN ('pending', 'confirmed') 
+                AND status IN ('pending', 'confirmed', 'completed', 'in_progress')
                 AND (
                     (booking_time <= ? AND ADDTIME(booking_time, '01:00:00') > ?)
                 )
@@ -127,7 +127,7 @@ try {
                 SELECT booking_time FROM bookings 
                 WHERE provider_id = ? 
                 AND booking_date = ? 
-                AND status IN ('pending', 'confirmed')
+                AND status IN ('pending', 'confirmed', 'completed', 'in_progress')
             ");
             $stmt->execute([$pid, $date]);
             $bookings = $stmt->fetchAll(PDO::FETCH_COLUMN);

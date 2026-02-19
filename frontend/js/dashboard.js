@@ -151,7 +151,7 @@ function loadCustomerServices() {
     const servicesContent = document.getElementById('servicesContent');
     if (!servicesContent) return;
 
-    fetch('../backend/api/services.php')
+    fetch('/HomeService/backend/api/services.php')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Failed to fetch services');
@@ -308,7 +308,7 @@ function loadAllProviders() {
     const providersContent = document.getElementById('professionalsContent');
     if (!providersContent) return;
 
-    fetch('../backend/api/get-all-providers.php')
+    fetch('/HomeService/backend/api/get-all-providers.php')
         .then(response => response.json())
         .then(data => {
             allProvidersCache = data.data || [];
@@ -425,7 +425,7 @@ function loadProviderServices() {
         return;
     }
 
-    fetch('../backend/api/provider-services.php?token=' + encodeURIComponent(token), {
+    fetch('/HomeService/backend/api/provider-services.php?token=' + encodeURIComponent(token), {
         method: 'GET',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -510,7 +510,7 @@ function loadBookings(status = null) {
         return;
     }
 
-    let url = '../backend/api/bookings.php?token=' + encodeURIComponent(token);
+    let url = '/HomeService/backend/api/bookings.php?token=' + encodeURIComponent(token);
     if (status) {
         url += '&status=' + encodeURIComponent(status);
     }
@@ -564,6 +564,8 @@ function loadBookings(status = null) {
 function createBookingElement(booking, userType) {
     const div = document.createElement('div');
     div.className = `booking-item booking-${booking.status}`;
+    div.dataset.id = booking.id; // Add data-id for scrolling
+
 
     // Parse date manually to avoid timezone issues
     const [year, month, day] = booking.booking_date.split('-').map(Number);
@@ -622,8 +624,15 @@ function createBookingElement(booking, userType) {
                  </div>
             </div>
             <div class="booking-actions">
-                <button class="btn btn-sm btn-primary" style="background-color: #3b82f6; border-color: #3b82f6;" onclick="openChat(${booking.provider_user_id}, '${booking.provider_name}')">Chat</button>
+                <button class="btn btn-sm btn-primary" style="background-color: #3b82f6; border-color: #3b82f6;" onclick="openChat(${booking.provider_user_id}, '${booking.provider_name ? booking.provider_name.replace(/'/g, "\\'") : ''}')">Chat</button>
                 ${booking.status === 'pending' ? `<button class="btn btn-sm btn-danger" onclick="cancelBooking(${booking.id})">Cancel Booking</button>` : ''}
+                
+                ${['completed', 'cancelled'].includes(booking.status) ?
+                `<button class="btn btn-sm btn-outline-danger" onclick="openReportModal(${booking.id})" style="border: 1px solid #ef4444; color: #ef4444; background: transparent;">Report Issue</button>` : ''}
+                
+                ${booking.status === 'completed' ?
+                `<button class="btn btn-sm btn-outline-primary" onclick="openReceiptModal(${booking.id})" style="border: 1px solid #3b82f6; color: #3b82f6; background: transparent;">Receipt</button>` : ''}
+
                 ${booking.status === 'completed' ?
                 (booking.user_rating
                     ? `<div style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%;">
@@ -783,6 +792,11 @@ function switchPage(pageId) {
     if (activeNavItem) {
         activeNavItem.classList.add('active');
     }
+
+    // Load data for dynamic pages
+    if (pageId === 'notifications') loadNotificationsPage();
+    if (pageId === 'calendar') loadCalendarPage();
+    if (pageId === 'my-reviews') loadProviderReviews();
 }
 
 // Logout function
@@ -831,7 +845,7 @@ async function cancelBooking(bookingId) {
 
     try {
         showLoadingState(true);
-        const response = await fetch('../backend/api/update-booking-status.php', {
+        const response = await fetch('/HomeService/backend/api/update-booking-status.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -880,61 +894,81 @@ function closeReviewModal() {
     if (modal) modal.style.display = 'none';
 }
 
-// Handle Review Submit
-document.addEventListener('DOMContentLoaded', () => {
+// Handle Review Submit (Explicit Function to prevent double-submit)
+function handleReviewSubmit() {
     const reviewForm = document.getElementById('reviewForm');
-    if (reviewForm) {
-        reviewForm.addEventListener('submit', function (e) {
-            e.preventDefault();
+    if (!reviewForm) return;
 
-            const bookingId = document.getElementById('reviewBookingId').value;
-            const comment = document.getElementById('reviewComment').value;
-            const ratingInput = document.querySelector('input[name="rating"]:checked');
-
-            if (!ratingInput) {
-                showNotification('Please select a rating', 'warning');
-                return;
-            }
-
-            const rating = ratingInput.value;
-
-            const token = localStorage.getItem('token');
-            showLoadingState(true);
-
-            fetch('../backend/api/submit-review.php', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    booking_id: bookingId,
-                    rating: parseFloat(rating),
-                    review: comment
-                })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    showLoadingState(false);
-                    if (data.success) {
-                        showNotification('Review submitted successfully', 'success');
-                        closeReviewModal();
-                        // Reload based on current active filter
-                        const activeFilter = document.querySelector('.filter-btn.active');
-                        const currentStatus = activeFilter ? activeFilter.dataset.filter : 'all';
-                        loadBookings(currentStatus === 'all' ? null : currentStatus);
-                    } else {
-                        showNotification(data.message || 'Failed to submit review', 'error');
-                    }
-                })
-                .catch(err => {
-                    showLoadingState(false);
-                    console.error(err);
-                    showNotification('Error submitting review', 'error');
-                });
-        });
+    // Mutex check: If already submitting, stop here.
+    if (reviewForm.dataset.submitting === "true") {
+        console.warn('Review submission already in progress.');
+        return;
     }
-});
+
+    const bookingId = document.getElementById('reviewBookingId').value;
+    const comment = document.getElementById('reviewComment').value;
+    const ratingInput = document.querySelector('input[name="rating"]:checked');
+
+    if (!ratingInput) {
+        showNotification('Please select a rating', 'warning');
+        return;
+    }
+
+    const rating = ratingInput.value;
+
+    const submitBtn = document.getElementById('btnSubmitReview');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+    }
+
+    // Set mutex
+    reviewForm.dataset.submitting = "true";
+
+    const token = localStorage.getItem('token');
+
+    fetch('/HomeService/backend/api/submit-review.php', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            booking_id: bookingId,
+            rating: parseFloat(rating),
+            review: comment
+        })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Review submitted successfully', 'success');
+                closeReviewModal();
+                // Reload based on current active filter
+                const activeFilter = document.querySelector('.filter-btn.active');
+                const currentStatus = activeFilter ? activeFilter.dataset.filter : 'all';
+                loadBookings(currentStatus === 'all' ? null : currentStatus);
+            } else {
+                showNotification(data.message || 'Failed to submit review', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showNotification('Error submitting review', 'error');
+        })
+        .finally(() => {
+            // Release mutex
+            reviewForm.dataset.submitting = "false";
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Review';
+            }
+        });
+}
+
+// Make it global
+window.handleReviewSubmit = handleReviewSubmit;
 
 // Update booking status (provider)
 async function updateBookingStatus(bookingId, newStatus) {
@@ -945,7 +979,7 @@ async function updateBookingStatus(bookingId, newStatus) {
 
     try {
         showLoadingState(true);
-        const response = await fetch('../backend/api/update-booking-status.php', {
+        const response = await fetch('/HomeService/backend/api/update-booking-status.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -988,10 +1022,10 @@ function showAddServiceModal() {
 
     // Fetch both provider's existing services and all available services
     Promise.all([
-        fetch('../backend/api/provider-services.php?token=' + encodeURIComponent(token), {
+        fetch('/HomeService/backend/api/provider-services.php?token=' + encodeURIComponent(token), {
             headers: { 'Authorization': 'Bearer ' + token }
         }).then(res => res.json()),
-        fetch('../backend/api/services.php').then(res => res.json())
+        fetch('/HomeService/backend/api/services.php').then(res => res.json())
     ])
         .then(([providerData, allServicesData]) => {
             select.innerHTML = '<option value="">Select a service...</option>';
@@ -1068,7 +1102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('token');
             showLoadingState(true);
 
-            fetch('../backend/api/add-service.php', {
+            fetch('/HomeService/backend/api/add-service.php', {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + token,
@@ -1113,7 +1147,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('token');
             showLoadingState(true);
 
-            fetch('../backend/api/update-service.php', { // Reusing update-service.php
+            fetch('/HomeService/backend/api/update-service.php', { // Reusing update-service.php
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + token,
@@ -1173,7 +1207,7 @@ function deleteService(serviceId) {
     const token = localStorage.getItem('token');
     showLoadingState(true);
 
-    fetch('../backend/api/delete-service.php', {
+    fetch('/HomeService/backend/api/delete-service.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -1302,7 +1336,7 @@ function saveProfile() {
 
     showLoadingState(true);
 
-    fetch('../backend/api/update-profile.php', {
+    fetch('/HomeService/backend/api/update-profile.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -1408,7 +1442,7 @@ function uploadProfileImage(input) {
     // Show uploading ...
     showNotification('Uploading image...', 'info');
 
-    fetch('../backend/api/upload-profile-image.php', {
+    fetch('/HomeService/backend/api/upload-profile-image.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token
@@ -1457,7 +1491,7 @@ function loadSchedule() {
     // Initial loading state
     list.innerHTML = '<p>Loading schedule...</p>';
 
-    fetch('../backend/api/get-schedule.php', {
+    fetch('/HomeService/backend/api/get-schedule.php', {
         headers: { 'Authorization': 'Bearer ' + token }
     })
         .then(res => res.json())
@@ -1633,7 +1667,7 @@ function closeChat() {
 function loadMessages(contactId, isPoll = false) {
     if (!currentChatContactId || currentChatContactId !== contactId) return;
 
-    fetch('../backend/api/get-messages.php?contact_id=' + contactId, {
+    fetch('/HomeService/backend/api/get-messages.php?contact_id=' + contactId, {
         headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     })
         .then(res => res.json())
@@ -1689,7 +1723,7 @@ function sendMessage() {
 
     input.value = ''; // Optimistic clear
 
-    fetch('../backend/api/send-message.php', {
+    fetch('/HomeService/backend/api/send-message.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('token'),
@@ -1739,7 +1773,7 @@ function saveSchedule() {
     const token = localStorage.getItem('token');
     showLoadingState(true);
 
-    fetch('../backend/api/update-schedule.php', {
+    fetch('/HomeService/backend/api/update-schedule.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -1770,6 +1804,12 @@ window.switchPage = function (pageId) {
         loadSchedule();
     } else if (pageId === 'transactions') {
         loadTransactions();
+    } else if (pageId === 'notifications') {
+        if (typeof loadNotificationsPage === 'function') loadNotificationsPage();
+    } else if (pageId === 'calendar') {
+        if (typeof loadCalendarPage === 'function') loadCalendarPage();
+    } else if (pageId === 'my-reviews') {
+        if (typeof loadProviderReviews === 'function') loadProviderReviews();
     }
 
     // Call original logic (duplicated here since `switchPage` is defined in scope but easy to just replicate basic logic or assume global)
@@ -1794,7 +1834,7 @@ function loadTransactions() {
     content.innerHTML = '<p class="empty-state">Loading transactions...</p>';
 
     const token = localStorage.getItem('token');
-    fetch('../backend/api/get-transactions.php', {
+    fetch('/HomeService/backend/api/get-transactions.php', {
         headers: { 'Authorization': 'Bearer ' + token }
     })
         .then(res => res.json())
@@ -1915,7 +1955,7 @@ function fetchNotifications(allowToast = false) {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    fetch('../backend/api/get-notifications.php', {
+    fetch('/HomeService/backend/api/get-notifications.php', {
         headers: {
             'Authorization': 'Bearer ' + token
         }
@@ -1960,6 +2000,9 @@ function getNotificationIcon(type) {
     if (type.includes('confirm')) return '✅';
     if (type.includes('complete')) return '🎉';
     if (type.includes('chat')) return '💬';
+    if (type.includes('review')) return '⭐';
+    if (type.includes('payment')) return '💰';
+    if (type.includes('system')) return '🔔';
     return '🔔';
 }
 
@@ -1973,44 +2016,149 @@ function getNotificationTitle(type) {
 
 function updateNotificationUI(notifications, unreadCount) {
     const badge = document.getElementById('notificationBadge');
-    const list = document.getElementById('notificationList');
+    const dropdownList = document.getElementById('notificationList');
+    const fullList = document.getElementById('fullNotificationList'); // The main page list
+    const markAllBtn = document.getElementById('markAllReadBtn');
 
-    // Update Badge
-    if (unreadCount > 0) {
-        badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-        badge.style.display = 'block';
-    } else {
-        badge.style.display = 'none';
+    // Update Badge & Mark All Button
+    if (badge) {
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+            badge.style.display = 'block';
+            if (markAllBtn) markAllBtn.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+            if (markAllBtn) markAllBtn.style.display = 'none';
+        }
     }
 
-    // Update List
-    if (!notifications || notifications.length === 0) {
-        list.innerHTML = '<li class="notification-empty">No notifications yet</li>';
-        return;
-    }
+    // Helper to generate HTML
+    const generateHtml = (listElement) => {
+        if (!notifications || notifications.length === 0) {
+            listElement.innerHTML = '<li class="notification-empty" style="padding: 20px; text-align: center; color: #6b7280;">No notifications yet</li>';
+            return;
+        }
 
-    list.innerHTML = '';
+        listElement.innerHTML = '';
+        notifications.forEach(notif => {
+            const li = document.createElement('li');
+            li.className = `notification-item ${notif.is_read == 0 ? 'unread' : ''}`;
+            li.onclick = (e) => window.handleNotificationClick(notif.id, notif.type, notif.related_id); // Use global handler
 
-    notifications.forEach(notif => {
-        const li = document.createElement('li');
-        li.className = `notification-item ${notif.is_read == 0 ? 'unread' : ''}`;
-        li.onclick = (e) => handleNotificationClick(e, notif);
+            // Highlight unread
+            if (notif.is_read == 0) {
+                li.style.backgroundColor = '#eff6ff';
+                li.style.borderLeft = '4px solid #3b82f6';
+            } else {
+                li.style.backgroundColor = '#fff';
+                li.style.borderLeft = '4px solid transparent';
+            }
 
-        const date = new Date(notif.created_at);
-        const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const icon = getNotificationIcon(notif.type);
+            const date = new Date(notif.created_at);
+            const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const icon = getNotificationIcon(notif.type || 'system');
 
-        li.innerHTML = `
-            <div style="display:flex; gap:10px; align-items:flex-start;">
-                <div style="font-size:1.2rem; line-height:1;">${icon}</div>
-                <div>
-                    <div class="notification-message">${escapeHtml(notif.message)}</div>
-                    <div class="notification-time">${timeStr}</div>
+            li.innerHTML = `
+                <div style="display:flex; gap:15px; align-items:flex-start; padding: 10px;">
+                    <div style="font-size:1.5rem; line-height:1; min-width: 40px; text-align: center;">${icon}</div>
+                    <div style="flex-grow: 1;">
+                        <div class="notification-message" style="font-weight: ${notif.is_read == 0 ? '600' : '400'}; color: #1f2937;">${escapeHtml(notif.message)}</div>
+                        <div class="notification-time" style="font-size:0.85rem; color:#9ca3af; margin-top:4px;">${timeStr}</div>
+                    </div>
+                     ${notif.is_read == 0 ? '<span style="width:10px; height:10px; background:#2563eb; border-radius:50%; display:inline-block; margin-top: 5px;"></span>' : ''}
                 </div>
-            </div>
-        `;
-        list.appendChild(li);
-    });
+            `;
+            listElement.appendChild(li);
+        });
+    };
+
+    // Update Dropdown (limit to 5?)
+    if (dropdownList) {
+        // We can pass a sliced array if we want specific limit, or CSS handles scroll
+        // For dropdown, maybe just top 5
+        const recent = notifications.slice(0, 5);
+
+        // Custom generation for dropdown (simpler)
+        if (recent.length === 0) {
+            dropdownList.innerHTML = '<li class="notification-empty">No notifications yet</li>';
+        } else {
+            dropdownList.innerHTML = '';
+            recent.forEach(notif => {
+                const li = document.createElement('li');
+                li.className = `notification-item ${notif.is_read == 0 ? 'unread' : ''}`;
+                li.onclick = (e) => window.handleNotificationClick(notif.id, notif.type, notif.related_id);
+
+                const icon = getNotificationIcon(notif.type || 'system');
+                const timeAgo = getTimeAgo(new Date(notif.created_at));
+
+                li.innerHTML = `
+                    <div style="display:flex; gap:10px; align-items:flex-start;">
+                        <div style="font-size:1.2rem;">${icon}</div>
+                        <div>
+                            <div class="notification-message">${escapeHtml(notif.message)}</div>
+                            <div class="notification-time">${timeAgo}</div>
+                        </div>
+                    </div>
+                 `;
+                dropdownList.appendChild(li);
+            });
+        }
+    }
+
+    // Update Full List (Active page)
+    if (fullList) {
+        if (!notifications || notifications.length === 0) {
+            fullList.innerHTML = '<div class="empty-state"><div style="font-size: 3rem; margin-bottom: 1rem;">🔔</div><h3>No Notifications</h3><p>You have no notifications yet.</p></div>';
+            return;
+        }
+
+        fullList.innerHTML = '';
+        notifications.forEach(notif => {
+            const div = document.createElement('div');
+            // Do NOT use booking-item class as it forces column layout (lines 720-732 in dashboard.css)
+            div.className = `notification-item ${notif.is_read == 0 ? 'unread' : ''}`;
+            div.onclick = (e) => window.handleNotificationClick(notif.id, notif.type, notif.related_id);
+
+            // Inline styles to match bookings list + notification specifics
+            let bg = '#fff';
+            let borderLeft = '1px solid #e5e7eb'; // Default border
+
+            if (notif.is_read == 0) {
+                bg = '#eff6ff';
+                borderLeft = '4px solid #3b82f6';
+            }
+
+            div.style.cssText = `
+                padding: 16px; 
+                margin-bottom: 0; 
+                border: 1px solid #e5e7eb; 
+                border-left: ${borderLeft}; 
+                border-radius: 8px; 
+                background: ${bg}; 
+                cursor: pointer; 
+                transition: transform 0.2s, box-shadow 0.2s;
+                display: flex;
+                flex-direction: row; /* Explicitly set to row */
+                align-items: center;
+                gap: 15px;
+                text-align: left; /* Reset text align */
+            `;
+
+            const date = new Date(notif.created_at);
+            const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const icon = getNotificationIcon(notif.type || 'system');
+
+            div.innerHTML = `
+                <div style="font-size:1.5rem; line-height:1; min-width: 40px; text-align: center;">${icon}</div>
+                <div style="flex-grow: 1;">
+                    <div style="font-weight: ${notif.is_read == 0 ? '700' : '500'}; color: #1f2937; font-size: 1rem; margin-bottom: 4px;">${escapeHtml(notif.message)}</div>
+                    <div style="font-size:0.85rem; color:#6b7280;">${timeStr}</div>
+                </div>
+                 ${notif.is_read == 0 ? '<span style="width:10px; height:10px; background:#2563eb; border-radius:50%; display:inline-block; margin-left: auto;"></span>' : ''}
+            `;
+            fullList.appendChild(div);
+        });
+    }
 }
 
 function showToast(title, message, icon, notification = null) {
@@ -2032,7 +2180,7 @@ function showToast(title, message, icon, notification = null) {
     if (notification) {
         toast.style.cursor = 'pointer';
         toast.onclick = (e) => {
-            handleNotificationClick(e, notification);
+            window.handleNotificationClick(notification.id, notification.type, notification.related_id);
             toast.remove();
         };
     }
@@ -2047,35 +2195,12 @@ function showToast(title, message, icon, notification = null) {
 }
 
 
-function handleNotificationClick(event, notification) {
-    event.stopPropagation();
-
-    // Mark as read
-    if (notification.is_read == 0) {
-        markNotificationRead(notification.id);
-    }
-
-    // If booking related, switch to bookings tab
-    if (notification.type.includes('booking')) {
-        if (typeof switchPage === 'function') {
-            switchPage('bookings');
-        }
-        document.getElementById('notificationDropdown').classList.remove('active');
-    }
-
-    // If chat related, open chat modal
-    if (notification.type === 'chat_message') {
-        if (typeof openChat === 'function') {
-            // notification.related_id holds the sender_id (contact_id)
-            openChat(notification.related_id, 'Chat');
-        }
-        document.getElementById('notificationDropdown').classList.remove('active');
-    }
-}
+// Old handleNotificationClick removed. New one is defined below.
 
 function markNotificationRead(id) {
-    const token = localStorage.getItem('token');
-    fetch('../backend/api/mark-notification-read.php', {
+    var token = localStorage.getItem('token');
+    if (!token) return;
+    fetch('/HomeService/backend/api/mark-notification-read.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -2083,17 +2208,20 @@ function markNotificationRead(id) {
         },
         body: JSON.stringify({ notification_id: id })
     })
-        .then(res => res.json())
-        .then(data => {
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
             if (data.success) {
-                fetchNotifications(false); // Refresh UI
+                if (typeof fetchNotifications === 'function') fetchNotifications(false);
+                if (typeof loadNotificationsPage === 'function') loadNotificationsPage();
             }
-        });
+        })
+        .catch(function () { });
 }
 
 function markAllNotificationsRead() {
-    const token = localStorage.getItem('token');
-    fetch('../backend/api/mark-notification-read.php', {
+    var token = localStorage.getItem('token');
+    if (!token) return;
+    fetch('/HomeService/backend/api/mark-notification-read.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -2101,12 +2229,14 @@ function markAllNotificationsRead() {
         },
         body: JSON.stringify({ mark_all: true })
     })
-        .then(res => res.json())
-        .then(data => {
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
             if (data.success) {
-                fetchNotifications(false); // Refresh UI
+                if (typeof fetchNotifications === 'function') fetchNotifications(false);
+                if (typeof loadNotificationsPage === 'function') loadNotificationsPage();
             }
-        });
+        })
+        .catch(function () { });
 }
 
 function escapeHtml(text) {
@@ -2118,3 +2248,976 @@ function escapeHtml(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+// ==================== NOTIFICATIONS PAGE ====================
+// ==================== NOTIFICATIONS PAGE ====================
+function loadNotificationsPage() {
+    // Simply fetch notifications, which will update the UI via updateNotificationUI
+    // We pass 'false' to avoid showing a toast for every item on page load
+    fetchNotifications(false);
+}
+
+function getTimeAgo(date) {
+    var now = new Date();
+    var diff = Math.floor((now - date) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' hours ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + ' days ago';
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+
+
+// ==================== CALENDAR PAGE ====================
+var calCurrentMonth = new Date().getMonth();
+var calCurrentYear = new Date().getFullYear();
+var calBookings = [];
+
+function loadCalendarPage(month = null, year = null) {
+    if (month !== null) calCurrentMonth = month;
+    if (year !== null) calCurrentYear = year;
+
+    var token = localStorage.getItem('token');
+
+    // Update Header UI immediately
+    var monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+    var label = document.getElementById('calMonthYear');
+    if (label) label.textContent = monthNames[calCurrentMonth] + ' ' + calCurrentYear;
+
+    if (!token) {
+        renderCalendarGrid();
+        return;
+    }
+
+    // Fetch data for specific month (month is 0-indexed in JS, but 1-indexed in MySQL normally? 
+    // PHP intval($_GET['month']) usually expects 1-12.
+    // Let's pass 1-based month to API.
+    var apiMonth = calCurrentMonth + 1;
+
+    fetch('/HomeService/backend/api/bookings.php?token=' + token + '&month=' + apiMonth + '&year=' + calCurrentYear)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            calBookings = (data.success && data.bookings) ? data.bookings : [];
+            renderCalendarGrid();
+            renderCalendarUpcoming(); // Update simple list below too? OR maybe remove it if modal rules.
+            // User said "Clicking a date opens a side panel or modal".
+            // "Upcoming" list might still be useful as a summary.
+        })
+        .catch(function () {
+            calBookings = [];
+            renderCalendarGrid();
+        });
+}
+
+// Helper for safe date parsing (Global scope for calendar functions)
+function getBookingDateParts(dateStr) {
+    if (!dateStr) return null;
+    const parts = dateStr.split('-');
+    return {
+        year: parseInt(parts[0], 10),
+        month: parseInt(parts[1], 10) - 1, // 0-indexed
+        day: parseInt(parts[2], 10)
+    };
+}
+
+function renderCalendarGrid() {
+    var grid = document.getElementById('calendarGrid');
+    if (!grid) return;
+
+    // Clear old days
+    var oldDays = grid.querySelectorAll('.cal-day');
+    oldDays.forEach(day => day.remove());
+
+    var firstDay = new Date(calCurrentYear, calCurrentMonth, 1).getDay(); // 0=Sun
+    var daysInMonth = new Date(calCurrentYear, calCurrentMonth + 1, 0).getDate();
+    var today = new Date();
+    var isCurrentMonth = (today.getMonth() === calCurrentMonth && today.getFullYear() === calCurrentYear);
+
+    // Group bookings by day
+    var bookedDayMap = {};
+    for (var b = 0; b < calBookings.length; b++) {
+        var bk = calBookings[b];
+        if (bk.booking_date) {
+            const dateParts = getBookingDateParts(bk.booking_date);
+            if (dateParts && dateParts.month === calCurrentMonth && dateParts.year === calCurrentYear) {
+                var dayNum = dateParts.day;
+                if (!bookedDayMap[dayNum]) bookedDayMap[dayNum] = [];
+                bookedDayMap[dayNum].push(bk);
+            }
+        }
+    }
+
+    // Empty cells
+    for (var e = 0; e < firstDay; e++) {
+        var empty = document.createElement('div');
+        empty.className = 'cal-day empty';
+        grid.appendChild(empty);
+    }
+
+    // Days start
+    for (var d = 1; d <= daysInMonth; d++) {
+        var cell = document.createElement('div');
+        cell.className = 'cal-day';
+        cell.style.cursor = 'pointer';
+
+        // Cell Click
+        cell.onclick = (function (day) {
+            return function (e) {
+                if (e) e.stopPropagation();
+                openBookingDetails(day);
+            }
+        })(d);
+
+        var dayNumber = document.createElement('span');
+        dayNumber.className = 'cal-day-number';
+        dayNumber.textContent = d;
+        cell.appendChild(dayNumber);
+
+        if (isCurrentMonth && d === today.getDate()) {
+            cell.classList.add('today');
+        }
+
+        if (bookedDayMap[d]) {
+            cell.classList.add('booked');
+
+            var bookings = bookedDayMap[d];
+            bookings.sort((a, b) => (a.booking_time || '00:00').localeCompare(b.booking_time || '00:00'));
+
+            var maxEvents = 3;
+            for (var s = 0; s < bookings.length && s < maxEvents; s++) {
+                var bk = bookings[s];
+                var row = document.createElement('div');
+                row.className = 'cal-event-row status-' + bk.status;
+
+                // Row Click
+                row.onclick = (function (day) {
+                    return function (e) {
+                        e.stopPropagation();
+                        openBookingDetails(day);
+                    }
+                })(d);
+
+                var dot = document.createElement('div');
+                dot.className = 'cal-event-dot';
+                row.appendChild(dot);
+
+                if (bk.booking_time) {
+                    var timeSpan = document.createElement('span');
+                    timeSpan.className = 'cal-event-time';
+                    var timeParts = bk.booking_time.split(':');
+                    timeSpan.textContent = timeParts[0] + ':' + timeParts[1];
+                    row.appendChild(timeSpan);
+                }
+
+                var titleSpan = document.createElement('span');
+                titleSpan.className = 'cal-event-title';
+                titleSpan.textContent = (bk.service_name || 'Service').substring(0, 15);
+                row.appendChild(titleSpan);
+
+                cell.appendChild(row);
+            }
+
+            if (bookings.length > maxEvents) {
+                var more = document.createElement('div');
+                more.className = 'cal-more-tag';
+                more.textContent = '+' + (bookings.length - maxEvents) + ' more';
+                cell.appendChild(more);
+            }
+        }
+        grid.appendChild(cell);
+    }
+}
+
+function openBookingDetails(day) {
+    console.log('Opening booking details for day:', day);
+    var modal = document.getElementById('bookingDetailsModal');
+    var list = document.getElementById('modalBookingsList');
+    var title = document.getElementById('modalDateTitle');
+
+    if (!modal) {
+        console.error('Modal element not found');
+        return;
+    }
+
+    // Set date title
+    var dateObj = new Date(calCurrentYear, calCurrentMonth, day);
+    title.textContent = dateObj.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    // Filter bookings - Use same date parsing as render
+    // Helper must be available here too (create separate or inline)
+
+    var bookings = calBookings.filter(b => {
+        const parts = getBookingDateParts(b.booking_date);
+        return parts && parts.day === day && parts.month === calCurrentMonth && parts.year === calCurrentYear;
+    });
+
+    console.log('Bookings found for day:', bookings.length);
+
+    if (bookings.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state" style="padding: 2rem 0;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📅</div>
+                <p>No bookings scheduled for this day.</p>
+            </div>`;
+    } else {
+        var html = '';
+        bookings.forEach(bk => {
+            var statusClass = bk.status === 'confirmed' ? 'status-confirmed'
+                : bk.status === 'completed' ? 'status-completed'
+                    : bk.status === 'cancelled' ? 'status-cancelled' : 'status-pending';
+
+            var phoneLink = bk.customer_phone ? `<a href="tel:${bk.customer_phone}" style="color:#3b82f6; text-decoration:none;">${escapeHtml(bk.customer_phone)}</a>` : 'N/A';
+            var emailLink = bk.customer_email ? `<a href="mailto:${bk.customer_email}" style="color:#3b82f6; text-decoration:none;">${escapeHtml(bk.customer_email)}</a>` : 'N/A';
+            var mapLink = bk.customer_location ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bk.customer_location)}" target="_blank" style="color:#3b82f6; text-decoration:none;">${escapeHtml(bk.customer_location)}</a>` : 'Not specified';
+
+            html += `
+            <div class="modal-booking-item" style="border:1px solid #e5e7eb; border-radius:8px; padding:16px; margin-bottom:12px; background:#f9fafb;">
+                <div class="modal-booking-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                    <div>
+                        <div style="font-weight:700; font-size:1.1rem; color:#111827;">${escapeHtml(bk.service_name)}</div>
+                        <div style="font-size:0.9rem; color:#6b7280;">${escapeHtml(bk.service_category || '')}</div>
+                        <div style="font-size:0.8rem; color:#9ca3af; margin-top:2px;">ID: #${bk.id}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="status-badge ${statusClass}" style="margin-bottom:4px; display:inline-block;">${bk.status}</span>
+                        <div style="font-weight:600; color:#374151;">🕒 ${escapeHtml(bk.booking_time || 'TBD')}</div>
+                    </div>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size:0.9rem; border-top:1px solid #e5e7eb; padding-top:12px;">
+                    <div>
+                        <div style="color:#6b7280; font-size:0.8rem; margin-bottom:2px;">Customer</div>
+                        <div style="font-weight:600; color:#374151;">${escapeHtml(bk.customer_name || 'Unknown')}</div>
+                        <div style="margin-top:2px;">📞 ${phoneLink}</div>
+                        <div style="margin-top:2px;">✉️ ${emailLink}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280; font-size:0.8rem; margin-bottom:2px;">Location</div>
+                        <div>📍 ${mapLink}</div>
+                        <div style="color:#6b7280; font-size:0.8rem; margin-top:8px; margin-bottom:2px;">Payment</div>
+                        <div style="font-weight:700; color:#10b981;">₹${parseFloat(bk.total_amount).toFixed(2)}</div>
+                    </div>
+                </div>
+
+                ${bk.description ? `
+                <div style="margin-top:12px; background:white; padding:10px; border-radius:6px; border:1px solid #e5e7eb;">
+                    <div style="color:#6b7280; font-size:0.8rem; margin-bottom:2px;">Notes</div>
+                    <div style="color:#4b5563; font-style:italic;">"${escapeHtml(bk.description)}"</div>
+                </div>` : ''}
+            </div>`;
+        });
+        list.innerHTML = html;
+    }
+
+    // Force display
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+}
+
+function closeBookingDetailsModal() {
+    var modal = document.getElementById('bookingDetailsModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        // Clear list to prevent stale data briefly showing next time
+        // document.getElementById('modalBookingsList').innerHTML = '';
+    }
+} window.onclick = function (event) {
+    var modal = document.getElementById('bookingDetailsModal');
+    if (event.target == modal) {
+        closeBookingDetailsModal();
+    }
+}
+
+function renderCalendarUpcoming() {
+    // Optional: Keep duplicate list below or remove. User requirement didn't explicitly delete it.
+    // But "No fake reviews, no mock data" implies accuracy.
+    // Let's keep it as an implementation detal, but filter strictly from calBookings (which is now only 1 month).
+    // So this will show "Upcoming bookings IN THIS MONTH".
+    var container = document.getElementById('calendarBookings');
+    if (!container) return;
+
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    var upcoming = calBookings.filter(b => new Date(b.booking_date) >= today);
+    upcoming.sort((a, b) => new Date(a.booking_date) - new Date(b.booking_date));
+
+    // ... same render logic as before ...
+    // To save tokens, I'll trust the previous renderCalendarUpcoming logic is mostly fine, 
+    // BUT I should overwrite it to use the new filtered array correctly.
+
+    if (upcoming.length === 0) {
+        container.innerHTML = '<p class="empty-state">No upcoming bookings for this month.</p>';
+        return;
+    }
+
+    var html = '';
+    // Limit to 5
+    upcoming.slice(0, 5).forEach(bk => {
+        var dateObj = new Date(bk.booking_date);
+        var dateStr = dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+        var timeStr = bk.booking_time ? bk.booking_time.substring(0, 5) : '';
+        var dayOfMonth = dateObj.getDate();
+
+        var statusClass = bk.status === 'confirmed' ? 'status-confirmed'
+            : bk.status === 'completed' ? 'status-completed'
+                : bk.status === 'cancelled' ? 'status-cancelled' : 'status-pending';
+
+        var phoneLink = bk.customer_phone ? `<a href="tel:${bk.customer_phone}" onclick="event.stopPropagation()" style="color:#3b82f6; text-decoration:none;">${escapeHtml(bk.customer_phone)}</a>` : 'N/A';
+        var emailLink = bk.customer_email ? `<a href="mailto:${bk.customer_email}" onclick="event.stopPropagation()" style="color:#3b82f6; text-decoration:none;">${escapeHtml(bk.customer_email)}</a>` : 'N/A';
+        var mapLink = bk.customer_location ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bk.customer_location)}" target="_blank" onclick="event.stopPropagation()" style="color:#3b82f6; text-decoration:none;">${escapeHtml(bk.customer_location)}</a>` : 'Not specified';
+
+        html += `
+        <div class="booking-item" onclick="openBookingDetails(${dayOfMonth})" style="padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; border-bottom: 1px solid #f3f4f6; padding-bottom: 8px;">
+                <div>
+                    <h4 style="margin:0; font-size:1.1rem; color:#1f2937; font-weight: 700;">${escapeHtml(bk.service_name)}</h4>
+                    <div style="color:#6b7280; font-size: 0.9rem; margin-top: 2px;">${dateStr} • ${timeStr}</div>
+                </div>
+                <div style="text-align:right;">
+                    <span class="status-badge ${statusClass}">${bk.status}</span>
+                    <div style="font-size:0.75rem; color:#9ca3af; margin-top: 4px;">#${bk.id}</div>
+                </div>
+             </div>
+
+             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                 <div>
+                    <div style="font-size:0.75rem; text-transform:uppercase; color:#9ca3af; font-weight:600; margin-bottom:4px;">Customer</div>
+                    <div style="font-weight:600; color:#374151;">${escapeHtml(bk.customer_name)}</div>
+                    <div style="font-size:0.9rem; margin-top:2px;">📞 ${phoneLink}</div>
+                    <div style="font-size:0.9rem; margin-top:2px;">✉️ ${emailLink}</div>
+                 </div>
+                 <div>
+                    <div style="font-size:0.75rem; text-transform:uppercase; color:#9ca3af; font-weight:600; margin-bottom:4px;">Location</div>
+                    <div style="font-size:0.9rem;">📍 ${mapLink}</div>
+                    
+                    <div style="font-size:0.75rem; text-transform:uppercase; color:#9ca3af; font-weight:600; margin-top:8px; margin-bottom:4px;">Amount</div>
+                    <div style="font-weight:700; color:#10b981; font-size:1rem;">₹${parseFloat(bk.total_amount).toFixed(2)}</div>
+                 </div>
+             </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+}
+
+// Calendar Navigation
+document.addEventListener('DOMContentLoaded', function () {
+    var prevBtn = document.getElementById('calPrev');
+    var nextBtn = document.getElementById('calNext');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function () {
+            calCurrentMonth--;
+            if (calCurrentMonth < 0) { calCurrentMonth = 11; calCurrentYear--; }
+            loadCalendarPage(calCurrentMonth, calCurrentYear);
+        });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+            calCurrentMonth++;
+            if (calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; }
+            loadCalendarPage(calCurrentMonth, calCurrentYear);
+        });
+    }
+    // Initial Render
+    // loadCalendarPage(); // Called by switchPage or direct load? 
+    // dashboard.js structure calls specific load functions when switching tabs. 
+    // We should rely on switchPage('calendar') calling loadCalendarPage().
+});
+
+// ==================== MY REVIEWS PAGE ====================
+function loadProviderReviews() {
+    var statsContainer = document.getElementById('reviewsStats');
+    var contentContainer = document.getElementById('reviewsContent');
+    if (!contentContainer) return;
+
+    var token = localStorage.getItem('token');
+    if (!token) {
+        if (statsContainer) statsContainer.innerHTML = '';
+        contentContainer.innerHTML = '<p class="empty-state">Please log in to view reviews.</p>';
+        return;
+    }
+
+    // Show loading state
+    contentContainer.innerHTML = '<div class="loading-spinner"></div>';
+
+    fetch('/HomeService/backend/api/get-provider-reviews.php?token=' + encodeURIComponent(token), {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(function (r) {
+            if (!r.ok) throw new Error('Network response was not ok: ' + r.statusText);
+            return r.json();
+        })
+        .then(function (data) {
+            if (!data.success) {
+                if (statsContainer) statsContainer.innerHTML = '';
+                contentContainer.innerHTML = '<div class="empty-state">' + (data.message || 'No reviews found.') + '</div>';
+                return;
+            }
+
+            // Render stats
+            if (statsContainer) {
+                var reviews = data.reviews || [];
+                var fiveStarCount = 0;
+
+                if (typeof data.five_star_count !== 'undefined') {
+                    fiveStarCount = data.five_star_count;
+                } else {
+                    // Fallback
+                    for (var i = 0; i < reviews.length; i++) {
+                        if (parseFloat(reviews[i].rating) >= 5) fiveStarCount++;
+                    }
+                }
+
+                // Calculate real average from fetched reviews if needed, or use backend provided
+                var avg = data.avg_rating || '0.0';
+
+                statsContainer.innerHTML =
+                    '<div class="stat-card">' +
+                    '<div class="stat-icon" style="background:rgba(251, 191, 36, 0.1); color:#f59e0b;">⭐</div>' +
+                    '<div class="stat-content">' +
+                    '<h3>' + avg + '</h3>' +
+                    '<p>Average Rating</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="stat-card">' +
+                    '<div class="stat-icon" style="background:rgba(59, 130, 246, 0.1); color:#3b82f6;">📝</div>' +
+                    '<div class="stat-content">' +
+                    '<h3>' + (data.total_reviews || 0) + '</h3>' +
+                    '<p>Total Reviews</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="stat-card">' +
+                    '<div class="stat-icon" style="background:rgba(16, 185, 129, 0.1); color:#10b981;">👍</div>' +
+                    '<div class="stat-content">' +
+                    '<h3>' + fiveStarCount + '</h3>' +
+                    '<p>5-Star Reviews</p>' +
+                    '</div>' +
+                    '</div>';
+            }
+
+            // Render reviews list
+            if (!data.reviews || data.reviews.length === 0) {
+                contentContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+                        <h3>No Reviews Yet</h3>
+                        <p>You haven't received any reviews yet. Complete more jobs to get rated!</p>
+                    </div>`;
+                return;
+            }
+
+            var html = '';
+            for (var j = 0; j < data.reviews.length; j++) {
+                var rv = data.reviews[j];
+                var ratingNum = parseFloat(rv.rating) || 0;
+
+                // Star generation
+                var starsHtml = '<div class="star-rating-display">';
+                for (var k = 1; k <= 5; k++) {
+                    if (k <= Math.round(ratingNum)) starsHtml += '<span style="color:#fbbf24">★</span>';
+                    else starsHtml += '<span style="color:#d1d5db">★</span>';
+                }
+                starsHtml += '</div>';
+
+                var date = new Date(rv.created_at);
+                var dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                // Customer Initials
+                var customerName = escapeHtml(rv.customer_name || 'Customer');
+                var initials = customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+                html += `
+                <div class="review-card" style="background:white; padding:1.5rem; border-radius:12px; margin-bottom:1rem; border:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+                        <div style="display:flex; gap:1rem; align-items:center;">
+                            <div style="width:48px; height:48px; background:#e0e7ff; color:#4f46e5; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.1rem;">${initials}</div>
+                            <div>
+                                <h4 style="margin:0; color:#1f2937; font-size:1rem;">${customerName}</h4>
+                                <p style="margin:0; color:#6b7280; font-size:0.85rem;">${escapeHtml(rv.service_name || 'Service')}</p>
+                            </div>
+                        </div>
+                        <div style="text-align:right;">
+                            ${starsHtml}
+                            <div style="font-size:0.8rem; color:#9ca3af; margin-top:4px;">${dateStr}</div>
+                        </div>
+                    </div>
+                    ${rv.comment ? `<div style="background:#f9fafb; padding:1rem; border-radius:8px; color:#4b5563; font-style:italic; line-height:1.5;">"${escapeHtml(rv.comment)}"</div>` : ''}
+                </div>`;
+            }
+            contentContainer.innerHTML = html;
+        })
+        .catch(function (err) {
+            console.error('Error loading reviews:', err);
+            if (statsContainer) statsContainer.innerHTML = '';
+            contentContainer.innerHTML = '<div class="empty-state"><p>Failed to load reviews.</p></div>';
+        });
+}
+
+// Report Modal Logic
+function openReportModal(bookingId) {
+    const modal = document.getElementById('reportModal');
+    if (modal) {
+        document.getElementById('reportBookingId').value = bookingId;
+        modal.style.display = 'block';
+    }
+}
+
+function closeReportModal() {
+    const modal = document.getElementById('reportModal');
+    if (modal) {
+        modal.style.display = 'none';
+        const form = document.getElementById('reportForm');
+        if (form) form.reset();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const reportForm = document.getElementById('reportForm');
+    if (reportForm) {
+        reportForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const bookingId = document.getElementById('reportBookingId').value;
+            const issueType = document.getElementById('reportIssueType').value;
+            const description = document.getElementById('reportDescription').value;
+
+            if (!issueType || !description) {
+                showNotification('Please fill in all fields', 'warning');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            showLoadingState(true);
+
+            fetch('/HomeService/backend/api/report-issue.php', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    booking_id: bookingId,
+                    issue_type: issueType,
+                    description: description
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    showLoadingState(false);
+                    if (data.success) {
+                        showNotification('Report submitted successfully', 'success');
+                        closeReportModal();
+                    } else {
+                        showNotification(data.error || 'Failed to submit report', 'error');
+                    }
+                })
+                .catch(err => {
+                    showLoadingState(false);
+                    console.error(err);
+                    showNotification('Error submitting report', 'error');
+                });
+        });
+    }
+});
+
+// Receipt Modal Logic
+// Review Modal Logic
+function reviewBooking(bookingId) {
+    const modal = document.getElementById('reviewModal');
+    const bookingIdInput = document.getElementById('reviewBookingId');
+    if (modal && bookingIdInput) {
+        bookingIdInput.value = bookingId;
+        modal.style.display = 'block';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const reviewForm = document.getElementById('reviewForm');
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const bookingId = document.getElementById('reviewBookingId').value;
+            const rating = document.querySelector('input[name="rating"]:checked')?.value;
+            const comment = document.getElementById('reviewComment').value;
+
+            if (!rating) {
+                showNotification('Please select a rating', 'warning');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            showLoadingState(true);
+
+            fetch('/HomeService/backend/api/submit-review.php', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    booking_id: bookingId,
+                    rating: rating,
+                    comment: comment
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    showLoadingState(false);
+                    if (data.success) {
+                        showNotification('Review submitted!', 'success');
+                        document.getElementById('reviewModal').style.display = 'none';
+                        loadBookings(); // Refresh list to update button state
+                    } else {
+                        showNotification(data.message || 'Failed to submit review', 'error');
+                    }
+                })
+                .catch(err => {
+                    showLoadingState(false);
+                    console.error(err);
+                    showNotification('Error submitting review', 'error');
+                });
+        });
+    }
+});
+
+function openReceiptModal(bookingId) {
+    const token = localStorage.getItem('token');
+    showLoadingState(true);
+
+    fetch(`/HomeService/backend/api/bookings.php?user_type=customer`, {
+        headers: {
+            'Authorization': 'Bearer ' + token
+        }
+    })
+        .then(res => res.json())
+        .then(data => {
+            showLoadingState(false);
+            if (data.success) {
+                const booking = data.bookings.find(b => b.id == bookingId);
+                if (booking) {
+                    populateReceipt(booking);
+                } else {
+                    showNotification('Booking details not found', 'error');
+                }
+            } else {
+                showNotification('Failed to load bookings', 'error');
+            }
+        })
+        .catch(err => {
+            showLoadingState(false);
+            console.error(err);
+            showNotification('Error loading receipt', 'error');
+        });
+}
+
+function populateReceipt(booking) {
+    const modal = document.getElementById('receiptModal');
+    if (!modal) return;
+
+    // Basic Info
+    document.getElementById('receiptId').textContent = '#' + booking.id;
+    document.getElementById('receiptDate').textContent = new Date(booking.booking_date).toLocaleDateString() + ' ' + (booking.booking_time ? booking.booking_time.substring(0, 5) : '');
+    document.getElementById('receiptStatus').textContent = booking.status;
+    document.getElementById('receiptAmount').textContent = '₹' + parseFloat(booking.total_amount).toFixed(2);
+
+    // Service Info
+    document.getElementById('receiptService').textContent = booking.service_name;
+    document.getElementById('receiptCategory').textContent = booking.service_category || 'General Service';
+
+    // Duration & Payment
+    const hourlyRate = parseFloat(booking.hourly_rate || 0);
+    const totalAmount = parseFloat(booking.total_amount || 0);
+    let duration = booking.duration ? parseFloat(booking.duration) : 0;
+
+    // Fallback calculation if duration missing but we have rate
+    if (!duration && hourlyRate > 0) {
+        duration = totalAmount / hourlyRate;
+    }
+    // Fallback default
+    if (!duration) duration = 1;
+
+    // Update Receipt Info Section
+    document.getElementById('receiptPaymentMethod').textContent = (booking.payment_method || 'Cash').toUpperCase();
+    const txnId = booking.transaction_id || 'N/A';
+    // Add Transaction ID line if not exists or update it
+    let txnRow = document.getElementById('receiptTxnRow');
+    if (!txnRow) {
+        const infoDiv = document.getElementById('receiptPaymentMethod').parentNode.parentNode;
+        txnRow = document.createElement('p');
+        txnRow.id = 'receiptTxnRow';
+        txnRow.style.cssText = "margin: 5px 0 0; font-size: 14px;";
+        txnRow.innerHTML = `<strong>Txn ID:</strong> <span id="receiptTxnId"></span>`;
+        infoDiv.insertBefore(txnRow, document.getElementById('receiptStatus').parentNode);
+    }
+    document.getElementById('receiptTxnId').textContent = txnId;
+
+    // Service Info & Line Items
+    document.getElementById('receiptService').textContent = booking.service_name;
+    document.getElementById('receiptCategory').textContent = booking.service_category || 'General Service';
+
+    document.getElementById('receiptDuration').innerHTML = `
+        <div style="margin-top:4px; font-size:13px; color:#4b5563;">
+            Rate: ₹${hourlyRate.toFixed(2)} / hr
+        </div>
+        <div style="font-size:13px; color:#4b5563;">
+            Duration: ${duration.toFixed(1)} hrs
+        </div>
+    `;
+
+    // Provider Info
+    document.getElementById('receiptProvider').textContent = booking.provider_name || 'Assigned Provider';
+    let contactInfo = booking.provider_email || '';
+    if (booking.provider_phone) contactInfo += (contactInfo ? ' / ' : '') + booking.provider_phone;
+    document.getElementById('receiptProviderContact').textContent = contactInfo;
+
+    // Customer Info
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    document.getElementById('receiptCustomerName').textContent = user.full_name || 'Customer';
+    document.getElementById('receiptCustomerLocation').textContent = booking.customer_location || user.location || 'Not specified';
+
+    // Notes
+    const notesSec = document.getElementById('receiptNotesSection');
+    if (booking.description) {
+        document.getElementById('receiptNotes').textContent = booking.description;
+        notesSec.style.display = 'block';
+    } else {
+        notesSec.style.display = 'none';
+    }
+
+    modal.style.display = 'block';
+}
+
+function closeReceiptModal() {
+    const modal = document.getElementById('receiptModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function printReceipt() {
+    const printContent = document.getElementById('receiptArea').innerHTML;
+
+    // Create a hidden iframe or new window for printing to avoid reloading
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write('<html><head><title>Receipt #' + document.getElementById('receiptId').textContent + '</title>');
+    printWindow.document.write('</head><body style="font-family: sans-serif;">');
+    printWindow.document.write(printContent);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Ensure initNotifications is called (it's already called in the main DOMContentLoaded block at line ~1887)
+// We removed the duplicate DOMContentLoaded block that was here.
+// Ensure initNotifications is called (it's already called in the main DOMContentLoaded block at line ~1887)
+// We removed the duplicate DOMContentLoaded block that was here.
+window.handleNotificationClick = function (id, type, relatedId) {
+    console.log('Notification clicked:', id, type, relatedId);
+
+    // Navigation Logic (Immediate)
+    if (['booking_status', 'booking_new', 'booking_update', 'booking_confirmed', 'booking'].includes(type) && relatedId) {
+        if (typeof switchPage === 'function') {
+            switchPage('bookings');
+            // Give time for view to switch before opening modal
+            setTimeout(() => {
+                if (typeof openBookingDetailsById === 'function') {
+                    openBookingDetailsById(relatedId);
+                }
+            }, 500);
+        } else {
+            window.location.href = 'customer-dashboard.html#bookings';
+        }
+    }
+    else if (type === 'review' || type === 'rating') {
+        if (typeof switchPage === 'function') switchPage('my-reviews');
+    }
+    else if (type === 'chat_message') {
+        if (typeof openChat === 'function') openChat(relatedId || id, 'Chat'); // Fallback to ID if related missing? relatedId should be sender_id/booking_id
+    }
+    else if (type === 'payment') {
+        if (typeof switchPage === 'function') switchPage('earnings'); // Or transactions
+    }
+
+    // Mark as read (Background)
+    const token = localStorage.getItem('token');
+    if (token) {
+        fetch('/HomeService/backend/api/mark-notification-read.php', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ notification_id: id })
+        })
+            .then(() => {
+                console.log('Notification marked read');
+                // Optimistically update UI if we are still on the same page/view
+                const row = document.getElementById('notif-' + id);
+                if (row) {
+                    row.classList.remove('unread');
+                    row.style.background = '#fff';
+                    row.style.borderLeft = '1px solid #e5e7eb';
+                }
+                loadNotifications(); // Refresh counters
+            })
+            .catch(console.error);
+    }
+};
+
+// New function to open details by ID (independent of calendar)
+// New function to open details by ID (independent of calendar)
+function openBookingDetailsById(bookingId) {
+    // Retry finding the element a few times since loadBookings is async
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    function findAndScroll() {
+        const existingItem = document.querySelector(`.booking-item[data-id="${bookingId}"]`);
+
+        if (existingItem) {
+            existingItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            existingItem.style.transition = "all 0.5s ease";
+            existingItem.style.border = "2px solid #3b82f6";
+            existingItem.style.boxShadow = "0 0 15px rgba(59, 130, 246, 0.4)";
+
+            setTimeout(() => {
+                existingItem.style.border = "1px solid #e5e7eb";
+                existingItem.style.boxShadow = "none";
+            }, 3000);
+        } else if (attempts < maxAttempts) {
+            attempts++;
+            setTimeout(findAndScroll, 500); // Retry every 500ms
+        }
+    }
+
+    findAndScroll();
+}
+
+function showSingleBookingModal(booking) {
+    // Reuses the modal structure from calendar but populates directly
+    var modal = document.getElementById('bookingDetailsModal');
+    var list = document.getElementById('modalBookingsList');
+    var title = document.getElementById('modalDateTitle');
+
+    if (!modal) return;
+
+    title.textContent = "Booking Details #" + booking.id;
+
+    var statusClass = booking.status === 'confirmed' ? 'status-confirmed'
+        : booking.status === 'completed' ? 'status-completed'
+            : booking.status === 'cancelled' ? 'status-cancelled' : 'status-pending';
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isCustomer = user.user_type === 'customer';
+
+    // Dynamic fields based on user type
+    const otherPartyLabel = isCustomer ? 'Provider' : 'Customer';
+    const otherPartyName = isCustomer ? (booking.provider_name || 'Pending Assignment') : (booking.customer_name || 'Unknown');
+    const contactLabel = isCustomer ? 'Contact' : 'Customer Contact';
+
+    // For contact, provider sees customer phone/email. Customer sees provider email (or phone if available).
+    let otherPartyContact = '';
+    if (isCustomer) {
+        otherPartyContact = booking.provider_email || 'N/A';
+        if (booking.provider_phone) otherPartyContact += ` / ${booking.provider_phone}`;
+    } else {
+        otherPartyContact = booking.customer_phone || 'N/A';
+    }
+
+    var phoneLink = otherPartyContact !== 'N/A' ? `<a href="tel:${otherPartyContact}" style="color:#3b82f6;">${escapeHtml(otherPartyContact)}</a>` : 'N/A';
+    var mapLink = booking.customer_location ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.customer_location)}" target="_blank" style="color:#3b82f6;">${escapeHtml(booking.customer_location)}</a>` : 'Not specified';
+
+    var html = `
+    <div class="modal-booking-item" style="border:1px solid #e5e7eb; border-radius:8px; padding:16px; background:#f9fafb;">
+        <div class="modal-booking-header" style="display:flex; justify-content:space-between; margin-bottom:12px;">
+            <div>
+                <div style="font-weight:700; font-size:1.1rem;">${escapeHtml(booking.service_name)}</div>
+                <div style="font-size:0.9rem; color:#6b7280;">${escapeHtml(booking.service_category || '')}</div>
+            </div>
+            <div style="text-align:right;">
+                <span class="status-badge ${statusClass}">${booking.status}</span>
+                <div style="font-weight:600;">🕒 ${escapeHtml(booking.booking_time || 'TBD')}</div>
+                <div style="font-size:0.8rem; color:#6b7280;">${new Date(booking.booking_date).toLocaleDateString()}</div>
+            </div>
+        </div>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size:0.9rem; border-top:1px solid #e5e7eb; padding-top:12px;">
+            <div>
+                <div style="color:#6b7280; font-size:0.8rem; text-transform:uppercase;">${otherPartyLabel}</div>
+                <div style="font-weight:600;">${escapeHtml(otherPartyName)}</div>
+                <div style="margin-top:4px;">📞 ${phoneLink}</div>
+            </div>
+            <div>
+                <div style="color:#6b7280; font-size:0.8rem; text-transform:uppercase;">Location</div>
+                <div>📍 ${mapLink}</div>
+                <div style="color:#6b7280; font-size:0.8rem; margin-top:8px; text-transform:uppercase;">Amount</div>
+                <div style="font-weight:700; color:#10b981;">₹${parseFloat(booking.total_amount || 0).toFixed(2)}</div>
+            </div>
+        </div>
+        ${booking.description ? `<div style="margin-top:12px; font-style:italic; color:#4b5563;">"${escapeHtml(booking.description)}"</div>` : ''}
+        
+        <div style="margin-top:16px; border-top:1px solid #e5e7eb; padding-top:12px; text-align:right;">
+            ${isCustomer && booking.status === 'completed' ? `<button class="btn btn-sm btn-primary" onclick="openReceiptModal(${booking.id})">View Receipt</button>` : ''}
+            ${isCustomer && ['completed', 'cancelled'].includes(booking.status) ? `<button class="btn btn-sm btn-danger" onclick="openReportModal(${booking.id})">Report Issue</button>` : ''}
+        </div>
+    </div>`;
+
+    list.innerHTML = html;
+
+    // Force display flex to override any previous display:none
+    modal.style.display = 'flex';
+    // Add active class for animations if any
+    modal.classList.add('active');
+}
+
+function closeBookingDetailsModal() {
+    var modal = document.getElementById('bookingDetailsModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+}
+
+function timeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " years ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " months ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " days ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " hours ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " minutes ago";
+    return Math.floor(seconds) + " seconds ago";
+}
+
+/* ==================== MODAL HELPERS ==================== */
+window.closeBookingDetailsModal = function () {
+    const modal = document.getElementById('bookingDetailsModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+}
+
+// Global Click Listener for Modals (Click Outside to Close)
+window.addEventListener('click', function (event) {
+    const bookingModal = document.getElementById('bookingDetailsModal');
+    if (bookingModal && event.target === bookingModal) {
+        closeBookingDetailsModal();
+    }
+
+    const receiptModal = document.getElementById('receiptModal');
+    if (receiptModal && event.target === receiptModal) {
+        if (typeof closeReceiptModal === 'function') closeReceiptModal();
+    }
+});

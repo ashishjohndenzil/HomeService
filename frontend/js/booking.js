@@ -83,7 +83,7 @@ function createBookingModal() {
                         <div class="form-group" style="text-align: left;">
                             <label>Transaction ID / UTR <span style="color:red">*</span></label>
                             <input type="text" id="transactionId" placeholder="Enter 12-digit UTR number" required style="width:100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                            <small style="color: #666;">Enter the UTR number from your payment app after payment.</small>
+                            <small id="txn-feedback" style="display:block; margin-top:5px; font-size:0.85rem; color:#666; transition: color 0.3s;">Enter the UTR number from your payment app.</small>
                         </div>
 
                         <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -103,12 +103,18 @@ function createBookingModal() {
         if (typeof setupModalClickHandler === 'function') {
             setupModalClickHandler();
         }
+
+        // Explicitly attach close listener
+        const closeBtn = document.querySelector('#bookingModal .close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeBookingModal);
+        }
     }
 }
 
 // Load services into dropdown
 function loadServices() {
-    return fetch('../backend/api/services.php')
+    return fetch('/HomeService/backend/api/services.php')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Failed to fetch services');
@@ -171,67 +177,7 @@ function setupBookingForm() {
         window.initLocationAutocomplete('bookingAddress');
     }
 
-    function calculateTotal() {
-        if (!serviceSelect || !durationInput) return 0;
-
-        const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
-        const rate = selectedOption ? parseFloat(selectedOption.dataset.rate) : 0;
-        const duration = parseFloat(durationInput.value) || 0;
-
-        if (rate > 0 && duration > 0) {
-            const total = rate * duration;
-            totalInput.value = total.toFixed(2);
-            return total;
-        } else {
-            totalInput.value = '';
-            return 0;
-        }
-    }
-
-    function updateTimeSlots() {
-        const dateVal = document.getElementById('bookingDate').value;
-        const serviceId = document.getElementById('serviceSelect').value;
-        const timeSelect = document.getElementById('bookingTime');
-
-        if (!dateVal || !serviceId) return;
-
-        timeSelect.innerHTML = '<option value="">Loading slots...</option>';
-        timeSelect.disabled = true;
-
-        const params = new URLSearchParams({ date: dateVal, service_id: serviceId });
-
-        fetch(`../backend/api/get-available-slots.php?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                timeSelect.innerHTML = '<option value="">Select a time...</option>';
-                timeSelect.disabled = false;
-
-                if (data.success && data.slots.length > 0) {
-                    data.slots.forEach(slot => {
-                        const [hours, minutes] = slot.split(':');
-                        const date = new Date();
-                        date.setHours(parseInt(hours), parseInt(minutes));
-                        const displayTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-                        // Past check logic (simplified)
-                        const now = new Date();
-                        const checkDate = new Date(dateVal + 'T' + slot);
-                        if (checkDate.toDateString() === now.toDateString() && checkDate.getHours() <= now.getHours() + 1) return;
-
-                        const option = document.createElement('option');
-                        option.value = slot;
-                        option.textContent = displayTime;
-                        timeSelect.appendChild(option);
-                    });
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                timeSelect.innerHTML = '<option value="">Error loading slots</option>';
-            });
-    }
-
-    // Attach Listeners
+    // Listeners attached below
     if (serviceSelect) {
         serviceSelect.addEventListener('change', () => { calculateTotal(); updateTimeSlots(); });
     }
@@ -242,6 +188,8 @@ function setupBookingForm() {
     if (dateInput) {
         dateInput.addEventListener('change', updateTimeSlots);
     }
+
+
 
     // --- PAYMENT HANDLERS ---
 
@@ -289,10 +237,48 @@ function setupBookingForm() {
         });
     }
 
-    if (confirmBtn) {
+    if (confirmBtn && transactionInput) {
+        // Real-time validation
+        transactionInput.addEventListener('input', () => {
+            const val = transactionInput.value.trim();
+            const feedback = document.getElementById('txn-feedback');
+
+            // Rules
+            const isLengthOk = val.length >= 8 && val.length <= 30;
+            const isNotZero = !/^0+$/.test(val);
+            const isAlphanumeric = /^[a-zA-Z0-9]+$/.test(val);
+
+            if (val.length === 0) {
+                transactionInput.style.borderColor = '#ddd';
+                if (feedback) { feedback.textContent = 'Enter the UTR number from your payment app.'; feedback.style.color = '#666'; }
+                confirmBtn.disabled = true;
+                return;
+            }
+
+            if (!isLengthOk) {
+                if (feedback) { feedback.textContent = 'Transaction ID must be between 8 and 30 characters.'; feedback.style.color = '#EF4444'; }
+                transactionInput.style.borderColor = '#EF4444';
+                confirmBtn.disabled = true;
+            } else if (!isNotZero) {
+                if (feedback) { feedback.textContent = 'Transaction ID cannot be all zeros.'; feedback.style.color = '#EF4444'; }
+                transactionInput.style.borderColor = '#EF4444';
+                confirmBtn.disabled = true;
+            } else if (!isAlphanumeric) {
+                if (feedback) { feedback.textContent = 'Transaction ID must be alphanumeric (letters and numbers only).'; feedback.style.color = '#EF4444'; }
+                transactionInput.style.borderColor = '#EF4444';
+                confirmBtn.disabled = true;
+            } else {
+                if (feedback) { feedback.textContent = 'Looks good!'; feedback.style.color = '#10B981'; }
+                transactionInput.style.borderColor = '#10B981';
+                confirmBtn.disabled = false;
+            }
+        });
+
         confirmBtn.addEventListener('click', async () => {
             const transactionId = transactionInput.value.trim();
-            if (!transactionId || transactionId.length < 8) {
+
+            // Final check
+            if (transactionId.length < 8 || /^0+$/.test(transactionId)) {
                 showBookingNotification('Please enter a valid Transaction ID', 'error');
                 return;
             }
@@ -302,6 +288,7 @@ function setupBookingForm() {
 
             await submitBookingRaw(transactionId);
 
+            // Re-enable button (safe to do even if success/closed)
             confirmBtn.disabled = false;
             confirmBtn.textContent = 'Confirm Payment';
         });
@@ -310,6 +297,7 @@ function setupBookingForm() {
 
 // New helper to submit without form event default logic
 async function submitBookingRaw(transactionId) {
+    console.log('submitBookingRaw called with:', transactionId);
     const token = localStorage.getItem('token');
     const form = document.getElementById('bookingForm');
     const formData = new FormData(form);
@@ -343,8 +331,10 @@ async function submitBookingRaw(transactionId) {
         transaction_id: transactionId
     };
 
+    console.log('Sending Booking Data:', bookingData);
+
     try {
-        const res = await fetch('../backend/api/create-booking.php', {
+        const res = await fetch('/HomeService/backend/api/create-booking.php', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -353,19 +343,53 @@ async function submitBookingRaw(transactionId) {
             body: JSON.stringify(bookingData)
         });
 
+        console.log('Response Status:', res.status);
         const data = await res.json();
+        console.log('Response Data:', data);
 
         if (res.ok) {
-            showBookingNotification('Booking Successful! Pending Verification.', 'success');
+            console.log('Booking Success');
+
+            // Close modal FIRST
+            console.log('Closing Modal...');
             closeBookingModal();
+
+            // Then show notification
+            showBookingNotification('Booking Successful! Pending Verification.', 'success');
+
             // Refresh logic
-            if (typeof loadCustomerBookings === 'function') loadCustomerBookings();
+            if (typeof loadCustomerBookings === 'function') {
+                console.log('Refreshing bookings...');
+                loadCustomerBookings();
+            }
         } else {
-            showBookingNotification(data.error || 'Booking Failed', 'error');
+            console.warn('Booking Failed', data);
+            // Handle specific errors
+            const errorMsg = (data.error || '').toLowerCase();
+            if (res.status === 400 && errorMsg.includes('already booked')) {
+                showBookingNotification('Someone just booked this slot! Please choose another time.', 'error');
+
+                // Reset UI to form step
+                document.getElementById('booking-step-payment').style.display = 'none';
+                document.getElementById('booking-step-form').style.display = 'block';
+                document.getElementById('modalTitle').textContent = 'Book a Service';
+
+                // Refresh slots
+                if (typeof window.updateTimeSlots === 'function') {
+                    window.updateTimeSlots();
+                }
+                document.getElementById('bookingTime').value = '';
+            } else {
+                showBookingNotification(data.error || 'Booking Failed', 'error');
+            }
         }
     } catch (err) {
-        console.error(err);
+        console.error('Submission Error:', err);
         showBookingNotification('Network Error', 'error');
+    } finally {
+        // Find button and reset if it's still stuck (except on success where we close)
+        // Actually, button reset handles in event listener, but we can do it here too if needed?
+        // The event listener waits for await submitBookingRaw to finish.
     }
 }
 
@@ -440,9 +464,48 @@ async function openBookingModal(serviceId = null, providerId = null) {
 // Close booking modal
 function closeBookingModal() {
     const modal = document.getElementById('bookingModal');
-    if (modal) {
-        modal.style.display = 'none';
-        modal.classList.remove('show');
+    if (!modal) return;
+
+    modal.classList.remove('show');
+    // Force hide immediately
+    modal.style.setProperty('display', 'none', 'important');
+
+    try {
+        // Reset state
+        const form = document.getElementById('bookingForm');
+        if (form) form.reset();
+
+        const stepPayment = document.getElementById('booking-step-payment');
+        if (stepPayment) stepPayment.style.display = 'none';
+
+        const stepForm = document.getElementById('booking-step-form');
+        if (stepForm) stepForm.style.display = 'block';
+
+        const title = document.getElementById('modalTitle');
+        if (title) title.textContent = 'Book a Service';
+
+        const qr = document.getElementById('paymentQrCode');
+        if (qr) qr.src = '';
+
+        const txn = document.getElementById('transactionId');
+        if (txn) {
+            txn.value = '';
+            txn.style.borderColor = '#ddd';
+        }
+
+        const feedback = document.getElementById('txn-feedback');
+        if (feedback) {
+            feedback.textContent = 'Enter the UTR number from your payment app.';
+            feedback.style.color = '#666';
+        }
+
+        const confirmBtn = document.getElementById('confirmPaymentBtn');
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm Payment';
+        }
+    } catch (e) {
+        console.error('Error resetting modal:', e);
     }
 }
 
@@ -464,7 +527,20 @@ function showBookingNotification(message, type = 'info') {
         document.body.appendChild(container);
     }
 
+    // Prevent duplicate toasts (Robust check)
+    if (container.children.length > 0) {
+        Array.from(container.children).forEach(t => {
+            if (t.innerText.includes(message)) t.remove();
+        });
+    }
+
+    // Limit max toasts
+    while (container.children.length >= 3) {
+        container.firstChild.remove();
+    }
+
     const toast = document.createElement('div');
+    toast.className = 'booking-toast';
     const bgColor = type === 'success' ? '#10B981' : (type === 'error' ? '#EF4444' : '#3B82F6');
 
     toast.style.cssText = `
@@ -548,7 +624,7 @@ function submitBooking() {
     submitBtn.textContent = 'Booking...';
     submitBtn.disabled = true;
 
-    fetch('../backend/api/create-booking.php', {
+    fetch('/HomeService/backend/api/create-booking.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -587,12 +663,19 @@ function submitBooking() {
         });
 }
 
-// Setup modal click handler to close when clicking outside
+// Setup modal click handler to close when clicking outside or on close button
 function setupModalClickHandler() {
     const modal = document.getElementById('bookingModal');
     if (modal) {
         modal.addEventListener('click', function (e) {
             if (e.target === modal) {
+                closeBookingModal();
+            }
+        });
+
+        // Delegation for close button
+        modal.addEventListener('click', function (e) {
+            if (e.target.closest('.close-btn')) {
                 closeBookingModal();
             }
         });
@@ -697,6 +780,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 border-radius: 50%;
                 transition: all 0.3s ease;
                 font-weight: 300;
+                position: relative;
+                z-index: 10001;
             }
 
             .close-btn:hover {
@@ -820,7 +905,72 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// Expose functions to global window object for inline onclick handlers
 window.openBookingModal = openBookingModal;
 window.closeBookingModal = closeBookingModal;
 window.createBookingModal = createBookingModal;
+
+// Global helper functions for booking logic
+window.calculateTotal = function () {
+    const serviceSelect = document.getElementById('serviceSelect');
+    const durationInput = document.getElementById('duration');
+    const totalInput = document.getElementById('estimatedAmount');
+
+    if (!serviceSelect || !durationInput) return 0;
+
+    const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+    const rate = selectedOption ? parseFloat(selectedOption.dataset.rate) : 0;
+    const duration = parseFloat(durationInput.value) || 0;
+
+    if (rate > 0 && duration > 0) {
+        const total = rate * duration;
+        if (totalInput) totalInput.value = total.toFixed(2);
+        return total;
+    } else {
+        if (totalInput) totalInput.value = '';
+        return 0;
+    }
+}
+
+window.updateTimeSlots = function () {
+    const dateVal = document.getElementById('bookingDate').value;
+    const serviceSelect = document.getElementById('serviceSelect');
+    const serviceId = serviceSelect ? serviceSelect.value : null;
+    const timeSelect = document.getElementById('bookingTime');
+
+    if (!dateVal || !serviceId || !timeSelect) return;
+
+    timeSelect.innerHTML = '<option value="">Loading slots...</option>';
+    timeSelect.disabled = true;
+
+    const params = new URLSearchParams({ date: dateVal, service_id: serviceId });
+
+    fetch(`/HomeService/backend/api/get-available-slots.php?${params.toString()}`)
+        .then(res => res.json())
+        .then(data => {
+            timeSelect.innerHTML = '<option value="">Select a time...</option>';
+            timeSelect.disabled = false;
+
+            if (data.success && data.slots.length > 0) {
+                data.slots.forEach(slot => {
+                    const [hours, minutes] = slot.split(':');
+                    const date = new Date();
+                    date.setHours(parseInt(hours), parseInt(minutes));
+                    const displayTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+                    // Past check logic (simplified)
+                    const now = new Date();
+                    const checkDate = new Date(dateVal + 'T' + slot);
+                    if (checkDate.toDateString() === now.toDateString() && checkDate.getHours() <= now.getHours() + 1) return;
+
+                    const option = document.createElement('option');
+                    option.value = slot;
+                    option.textContent = displayTime;
+                    timeSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            timeSelect.innerHTML = '<option value="">Error loading slots</option>';
+        });
+}

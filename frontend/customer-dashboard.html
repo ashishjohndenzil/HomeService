@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Dashboard - HomeService</title>
     <link rel="stylesheet" href="css/style.css?v=3">
-    <link rel="stylesheet" href="css/dashboard.css?v=2">
+    <link rel="stylesheet" href="css/dashboard.css?v=3">
     <link rel="stylesheet" href="css/notifications.css?v=2">
 </head>
 
@@ -103,6 +103,9 @@
                 </a>
                 <a href="#transactions" class="nav-item" data-page="transactions">
                     💳 Transactions
+                </a>
+                <a href="#notifications" class="nav-item" data-page="notifications">
+                    🔔 Notifications
                 </a>
             </nav>
         </aside>
@@ -225,43 +228,190 @@
                     <p class="empty-state">Loading transactions...</p>
                 </div>
             </div>
+
+            <!-- Notifications Page -->
+            <div id="notifications" class="page">
+                <div class="page-header">
+                    <h1>Notifications</h1>
+                    <button class="btn btn-sm btn-secondary" onclick="markAllNotificationsRead()">Mark all read</button>
+                </div>
+                <div id="fullNotificationList" class="notification-list-container"
+                    style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
         </main>
+    </div>
+
+    <!-- Booking Details Modal (Reused for Notifications) -->
+    <div id="bookingDetailsModal" class="calendar-modal">
+        <div class="calendar-modal-content">
+            <div class="calendar-modal-header">
+                <h3 id="modalDateTitle">Booking Details</h3>
+                <button class="close-modal-btn" onclick="closeBookingDetailsModal()">&times;</button>
+            </div>
+            <div id="modalBookingsList" class="calendar-modal-body">
+                <!-- Populated by JS -->
+            </div>
+        </div>
     </div>
 
     <!-- Review Modal -->
     <div id="reviewModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeReviewModal()">&times;</span>
-            <h2>Write a Review</h2>
+            <span class="close" onclick="document.getElementById('reviewModal').style.display='none'">&times;</span>
+            <h2>Leave a Review</h2>
             <form id="reviewForm">
                 <input type="hidden" id="reviewBookingId">
                 <div class="form-group">
                     <label>Rating</label>
                     <div class="star-rating">
-                        <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
-                        <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
-                        <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
-                        <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
-                        <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
+                        <input type="radio" id="star5" name="rating" value="5" /><label for="star5">★</label>
+                        <input type="radio" id="star4" name="rating" value="4" /><label for="star4">★</label>
+                        <input type="radio" id="star3" name="rating" value="3" /><label for="star3">★</label>
+                        <input type="radio" id="star2" name="rating" value="2" /><label for="star2">★</label>
+                        <input type="radio" id="star1" name="rating" value="1" /><label for="star1">★</label>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="reviewComment">Your Review</label>
+                    <label>Comment</label>
                     <textarea id="reviewComment" rows="4" placeholder="Share your experience..."></textarea>
                 </div>
                 <div class="modal-buttons">
-                    <button type="button" class="btn btn-secondary" onclick="closeReviewModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                    <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('reviewModal').style.display='none'">Cancel</button>
+                    <button type="button" id="btnSubmitReview" class="btn btn-primary"
+                        onclick="handleReviewSubmit()">Submit Review</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeReportModal()">&times;</span>
+            <h2>Report an Issue</h2>
+            <form id="reportForm">
+                <input type="hidden" id="reportBookingId">
+                <div class="form-group">
+                    <label>Issue Type</label>
+                    <select id="reportIssueType" required>
+                        <option value="">Select Issue Type</option>
+                        <option value="provider_no_show">Provider Didn't Show Up</option>
+                        <option value="poor_service">Poor Service Quality</option>
+                        <option value="payment_issue">Payment Issue</option>
+                        <option value="rude_behavior">Rude Behavior</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="reportDescription" rows="4" placeholder="Describe the issue in detail..."
+                        required></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeReportModal()">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Submit Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receiptModal" class="modal">
+        <div class="modal-content receipt-content" style="max-width: 600px;">
+            <span class="close" onclick="closeReceiptModal()">&times;</span>
+            <div id="receiptArea" style="padding: 40px; border: 1px solid #e5e7eb; background: #fff;">
+                <div
+                    style="text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 20px; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #1e3a8a; font-size: 24px;">HomeService Receipt</h2>
+                    <p style="margin: 5px 0; color: #6b7280; font-size: 14px;">Official Payment Record</p>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+                    <div>
+                        <p style="color: #6b7280; font-size: 12px; text-transform: uppercase; margin-bottom: 5px;">
+                            Billed To</p>
+                        <h4 id="receiptCustomerName" style="margin: 0; font-size: 16px;"></h4>
+                        <p id="receiptCustomerLocation"
+                            style="margin: 5px 0 0; color: #374151; font-size: 14px; max-width: 200px;"></p>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <p style="color: #6b7280; font-size: 12px; text-transform: uppercase; margin-bottom: 5px;">
+                        Receipt Info</p>
+                    <p style="margin: 0; font-size: 14px;"><strong>#:</strong> <span id="receiptId"></span></p>
+                    <p style="margin: 5px 0 0; font-size: 14px;"><strong>Date:</strong> <span id="receiptDate"></span>
+                    </p>
+                    <p style="margin: 5px 0 0; font-size: 14px;"><strong>Payment:</strong> <span
+                            id="receiptPaymentMethod">Cash</span></p>
+                    <p
+                        style="margin: 5px 0 0; font-size: 14px; color: #10b981; font-weight: bold; text-transform: uppercase;">
+                        <span id="receiptStatus"></span>
+                    </p>
+                </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                <thead>
+                    <tr style="background: #f3f4f6;">
+                        <th
+                            style="text-align: left; padding: 10px; border-bottom: 1px solid #d1d5db; font-size: 12px; text-transform: uppercase; color: #4b5563;">
+                            Service</th>
+                        <th
+                            style="text-align: left; padding: 10px; border-bottom: 1px solid #d1d5db; font-size: 12px; text-transform: uppercase; color: #4b5563;">
+                            Provider</th>
+                        <th
+                            style="text-align: right; padding: 10px; border-bottom: 1px solid #d1d5db; font-size: 12px; text-transform: uppercase; color: #4b5563;">
+                            Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 15px 10px; border-bottom: 1px solid #e5e7eb;">
+                            <div id="receiptService" style="font-weight: 600; color: #111827;"></div>
+                            <div id="receiptCategory" style="font-size: 12px; color: #6b7280; margin-top: 2px;">
+                            </div>
+                            <div id="receiptDuration" style="font-size: 12px; color: #6b7280; margin-top: 2px;">
+                            </div>
+                        </td>
+                        <td style="padding: 15px 10px; border-bottom: 1px solid #e5e7eb;">
+                            <div id="receiptProvider" style="color: #374151;"></div>
+                            <div id="receiptProviderContact" style="font-size: 12px; color: #6b7280; margin-top: 2px;">
+                            </div>
+                        </td>
+                        <td
+                            style="padding: 15px 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600; color: #111827;">
+                            <span id="receiptAmount"></span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div id="receiptNotesSection" style="margin-bottom: 30px; display: none;">
+                <p style="color: #6b7280; font-size: 12px; text-transform: uppercase; margin-bottom: 5px;">Notes</p>
+                <p id="receiptNotes"
+                    style="font-style: italic; color: #4b5563; background: #f9fafb; padding: 10px; border-radius: 4px;">
+                </p>
+            </div>
+
+            <div
+                style="border-top: 2px solid #e5e7eb; padding-top: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
+                <p>Thank you for using HomeService!</p>
+                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                    <button type="button" class="btn btn-secondary" onclick="closeReceiptModal()">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="printReceipt()">Print Receipt</button>
+                </div>
+            </div>
         </div>
     </div>
 
 
     <script src="js/location-autocomplete.js"></script>
     <script src="js/main.js?v=2"></script>
-    <script src="js/booking.js?v=999"></script>
-    <script src="js/dashboard.js?v=6"></script>
+    <script src="js/booking.js?v=1012"></script>
+    <script src="js/dashboard.js?v=20"></script>
 </body>
 
 </html>
