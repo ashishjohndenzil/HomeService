@@ -1,6 +1,6 @@
 <?php
-// Cashfree Configuration - SANDBOX
-// NOTE: Set these values in your environment variables or .env file
+// Cashfree Configuration
+// Load from environment variables or .env file
 define('CASHFREE_APP_ID', getenv('CASHFREE_APP_ID') ?: 'YOUR_APP_ID_HERE');
 define('CASHFREE_SECRET_KEY', getenv('CASHFREE_SECRET_KEY') ?: 'YOUR_SECRET_KEY_HERE');
 define('CASHFREE_API_VERSION', '2023-08-01');

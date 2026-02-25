@@ -65,19 +65,32 @@
 
             <nav class="sidebar-nav">
                 <a href="#" class="nav-item active" data-page="statistics">
-                    📊 Statistics
+                    <span class="nav-text">📊 Statistics</span>
                 </a>
                 <a href="#" class="nav-item" data-page="users">
-                    👥 User Management
+                    <span class="nav-text">👥 User Management</span>
+                    <span class="sidebar-badge" id="badge-users" style="display: none;">0</span>
                 </a>
                 <a href="#" class="nav-item" data-page="bookings">
-                    📅 All Bookings
+                    <span class="nav-text">📅 All Bookings</span>
+                    <span class="sidebar-badge" id="badge-bookings" style="display: none;">0</span>
+                </a>
+                <a href="#" class="nav-item" data-page="reports">
+                    <span class="nav-text">⚠️ Reports</span>
+                    <span class="sidebar-badge" id="badge-reports" style="display: none;">0</span>
+                </a>
+                <a href="#" class="nav-item" data-page="reviews">
+                    <span class="nav-text">⭐ Reviews</span>
+                </a>
+                <a href="#" class="nav-item" data-page="services">
+                    <span class="nav-text">🔧 Services</span>
+                    <span class="sidebar-badge" id="badge-services" style="display: none;">0</span>
                 </a>
                 <a href="#" class="nav-item" data-page="settings">
-                    ⚙️ Settings
+                    <span class="nav-text">⚙️ Settings</span>
                 </a>
                 <a href="#" class="nav-item logout-btn" onclick="logout()">
-                    🚪 Logout
+                    <span class="nav-text">🚪 Logout</span>
                 </a>
             </nav>
         </aside>
@@ -100,7 +113,8 @@
                     </div>
 
                     <div class="dashboard-stats">
-                        <div class="stat-card">
+                        <div class="stat-card" style="cursor: pointer;"
+                            onclick="document.querySelector('.nav-item[data-page=\'users\']')?.click()">
                             <div class="stat-icon">👥</div>
                             <div class="stat-content">
                                 <h3 id="totalUsers">
@@ -109,7 +123,8 @@
                                 <p>Total Users</p>
                             </div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" style="cursor: pointer;"
+                            onclick="document.querySelector('.nav-item[data-page=\'users\']')?.click(); setTimeout(() => document.querySelector('.filter-btn[data-filter=\'provider\']')?.click(), 100);">
                             <div class="stat-icon">🛠️</div>
                             <div class="stat-content">
                                 <h3 id="totalProviders">
@@ -118,7 +133,8 @@
                                 <p>Service Providers</p>
                             </div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" style="cursor: pointer;"
+                            onclick="document.querySelector('.nav-item[data-page=\'bookings\']')?.click()">
                             <div class="stat-icon">📅</div>
                             <div class="stat-content">
                                 <h3 id="totalBookings">
@@ -127,13 +143,33 @@
                                 <p>Total Bookings</p>
                             </div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card" style="cursor: pointer;"
+                            onclick="document.querySelector('.nav-item[data-page=\'bookings\']')?.click(); setTimeout(() => document.querySelector('.filter-btn[data-filter=\'completed\']')?.click(), 100);">
                             <div class="stat-icon">💰</div>
                             <div class="stat-content">
                                 <h3 id="totalRevenue">
                                     <div class="spinner-sm"></div>
                                 </h3>
                                 <p>Total Revenue</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔧</div>
+                            <div class="stat-content">
+                                <h3 id="activeServices">
+                                    <div class="spinner-sm"></div>
+                                </h3>
+                                <p>Active Services</p>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="cursor: pointer;"
+                            onclick="document.querySelector('.nav-item[data-page=\'reports\']')?.click()">
+                            <div class="stat-icon">⚠️</div>
+                            <div class="stat-content">
+                                <h3 id="pendingReports">
+                                    <div class="spinner-sm"></div>
+                                </h3>
+                                <p>Pending Reports</p>
                             </div>
                         </div>
                     </div>
@@ -173,6 +209,36 @@
                             </div>
                         </div>
 
+                    </div>
+                </div>
+
+                <!-- Services Page -->
+                <div id="services" class="page">
+                    <div class="page-header">
+                        <h1>Manage Services</h1>
+                        <button class="btn btn-primary" onclick="openAddServiceModal()">+ Add New Service</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="servicesTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Icon</th>
+                                    <th>Category</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="servicesList">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 2rem;">
+                                        <div class="spinner-sm"></div> Loading services...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -253,6 +319,64 @@
                     </div>
                 </div>
 
+                <!-- Reports Page -->
+                <div id="reports" class="page">
+                    <div class="page-header">
+                        <h1>Reported Issues</h1>
+                    </div>
+                    <div class="table-container">
+                        <table id="reportsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Date</th>
+                                    <th>Booking</th>
+                                    <th>Issue Type</th>
+                                    <th>Customer</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsList">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 2rem;">
+                                        <div class="spinner-sm"></div> Loading reports...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Reviews Page -->
+                <div id="reviews" class="page">
+                    <div class="page-header">
+                        <h1>All Reviews</h1>
+                    </div>
+                    <div class="table-container">
+                        <table id="reviewsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Date</th>
+                                    <th>Provider</th>
+                                    <th>Customer</th>
+                                    <th>Rating</th>
+                                    <th>Comment</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviewsList">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 2rem;">
+                                        <div class="spinner-sm"></div> Loading reviews...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Settings Page -->
                 <div id="settings" class="page">
                     <div class="page-header">
@@ -281,8 +405,84 @@
     <!-- Notification Container -->
 
 
+    <!-- Add Service Modal -->
+    <div id="addServiceModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close-modal" onclick="closeServiceModal('add')">&times;</span>
+            <h2>Add New Service</h2>
+            <form id="addServiceForm" onsubmit="event.preventDefault(); saveService('add');">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="addServiceName" style="display:block; margin-bottom:0.5rem; font-weight:600;">Service
+                        Name</label>
+                    <input type="text" id="addServiceName" class="form-control" required
+                        placeholder="e.g., Plumbing Repair"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="addServiceCategory"
+                        style="display:block; margin-bottom:0.5rem; font-weight:600;">Category</label>
+                    <input type="text" id="addServiceCategory" class="form-control" required
+                        placeholder="e.g., Plumbing"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="addServiceDescription"
+                        style="display:block; margin-bottom:0.5rem; font-weight:600;">Description</label>
+                    <textarea id="addServiceDescription" class="form-control" rows="3" required
+                        placeholder="Service description..."
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: inherit; resize: vertical;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="addServiceIcon" style="display:block; margin-bottom:0.5rem; font-weight:600;">Icon
+                        (Emoji or URL)</label>
+                    <input type="text" id="addServiceIcon" class="form-control" placeholder="e.g., 🔧"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                </div>
+                <button type="submit" class="btn btn-primary"
+                    style="width: 100%; padding: 0.75rem; font-size: 1rem;">Add Service</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Service Modal -->
+    <div id="editServiceModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close-modal" onclick="closeServiceModal('edit')">&times;</span>
+            <h2>Edit Service</h2>
+            <form id="editServiceForm" onsubmit="event.preventDefault(); saveService('edit');">
+                <input type="hidden" id="editServiceId">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="editServiceName" style="display:block; margin-bottom:0.5rem; font-weight:600;">Service
+                        Name</label>
+                    <input type="text" id="editServiceName" class="form-control" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="editServiceCategory"
+                        style="display:block; margin-bottom:0.5rem; font-weight:600;">Category</label>
+                    <input type="text" id="editServiceCategory" class="form-control" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="editServiceDescription"
+                        style="display:block; margin-bottom:0.5rem; font-weight:600;">Description</label>
+                    <textarea id="editServiceDescription" class="form-control" rows="3" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: inherit; resize: vertical;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="editServiceIcon" style="display:block; margin-bottom:0.5rem; font-weight:600;">Icon
+                        (Emoji or URL)</label>
+                    <input type="text" id="editServiceIcon" class="form-control"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                </div>
+                <button type="submit" class="btn btn-primary"
+                    style="width: 100%; padding: 0.75rem; font-size: 1rem;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
     <script src="js/main.js?v=2"></script>
-    <script src="js/admin-dashboard.js?v=4"></script>
+    <script src="js/admin-dashboard.js?v=7"></script>
 </body>
 
 </html>

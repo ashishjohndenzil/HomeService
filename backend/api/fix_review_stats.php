@@ -16,7 +16,7 @@ try {
             SELECT COUNT(*) as count, AVG(rating) as avg_rating 
             FROM reviews r 
             JOIN bookings b ON r.booking_id = b.id 
-            WHERE b.provider_id = ?
+            WHERE b.provider_id = ? AND b.status = 'completed'
         ");
         $statsStmt->execute([$pid]);
         $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);

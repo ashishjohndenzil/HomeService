@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     b.created_at,
                     s.name as service_name,
                     s.category as service_category,
-
+                    p.id as provider_id,
                     u.id as provider_user_id,
                     u.full_name as provider_name,
                     u.email as provider_email,
@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $params[] = intval($_GET['year']);
             }
             
-            $query .= " ORDER BY b.booking_date ASC";
+            $query .= " ORDER BY CASE b.status WHEN 'pending' THEN 1 WHEN 'confirmed' THEN 2 WHEN 'completed' THEN 3 WHEN 'cancelled' THEN 4 ELSE 5 END, b.booking_date DESC";
 
             
             $stmt = $pdo->prepare($query);
@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 $params[] = intval($_GET['year']);
             }
             
-            $query .= " ORDER BY b.booking_date ASC, b.booking_time ASC";
+            $query .= " ORDER BY CASE b.status WHEN 'pending' THEN 1 WHEN 'confirmed' THEN 2 WHEN 'completed' THEN 3 WHEN 'cancelled' THEN 4 ELSE 5 END, b.booking_date DESC, b.booking_time DESC";
             
             $stmt = $pdo->prepare($query);
             $stmt->execute($params);

@@ -90,22 +90,27 @@
             </div>
             <nav class="sidebar-nav">
                 <a href="#dashboard" class="nav-item active" data-page="dashboard">
-                    📊 Dashboard
+                    <span class="nav-text">📊 Dashboard</span>
                 </a>
                 <a href="#bookings" class="nav-item" data-page="bookings">
-                    📅 My Bookings
+                    <span class="nav-text">📅 My Bookings</span>
+                    <span class="sidebar-badge" id="badge-requests" style="display: none;">0</span>
+                </a>
+                <a href="#favorites" class="nav-item" data-page="favorites">
+                    <span class="nav-text">❤️ Favorites</span>
+                    <span class="sidebar-badge" id="badge-favorites" style="display: none;">0</span>
                 </a>
                 <a href="#services" class="nav-item" data-page="services">
-                    🔧 Services
+                    <span class="nav-text">🔧 Services</span>
                 </a>
                 <a href="#profile" class="nav-item" data-page="profile">
-                    ⚙️ Settings
+                    <span class="nav-text">⚙️ Settings</span>
                 </a>
                 <a href="#transactions" class="nav-item" data-page="transactions">
-                    💳 Transactions
+                    <span class="nav-text">💳 Transactions</span>
                 </a>
                 <a href="#notifications" class="nav-item" data-page="notifications">
-                    🔔 Notifications
+                    <span class="nav-text">🔔 Notifications</span>
                 </a>
             </nav>
         </aside>
@@ -119,25 +124,41 @@
                 </div>
 
                 <div class="dashboard-stats">
-                    <div class="stat-card">
+                    <div class="stat-card" style="cursor: pointer;" onclick="switchPage('bookings')">
                         <div class="stat-icon">📅</div>
                         <div class="stat-content">
                             <h3 id="upcomingCount">0</h3>
                             <p>Upcoming Bookings</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" style="cursor: pointer;"
+                        onclick="switchPage('bookings'); setTimeout(() => document.querySelector('.filter-btn[data-filter=\'completed\']')?.click(), 100);">
                         <div class="stat-icon">✅</div>
                         <div class="stat-content">
                             <h3 id="completedCount">0</h3>
                             <p>Completed Services</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" style="cursor: pointer;" onclick="switchPage('transactions')">
                         <div class="stat-icon">⭐</div>
                         <div class="stat-content">
                             <h3 id="totalSpent">₹0</h3>
                             <p>Total Spent</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="cursor: pointer;"
+                        onclick="switchPage('bookings'); setTimeout(() => document.querySelector('.filter-btn[data-filter=\'pending\']')?.click(), 100);">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-content">
+                            <h3 id="pendingCount">0</h3>
+                            <p>Pending Requests</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="cursor: pointer;" onclick="switchPage('favorites')">
+                        <div class="stat-icon">❤️</div>
+                        <div class="stat-content">
+                            <h3 id="favoritesCount">0</h3>
+                            <p>Favorite Providers</p>
                         </div>
                     </div>
                 </div>
@@ -165,6 +186,16 @@
                 </div>
                 <div id="bookingsContent" class="bookings-list">
                     <p class="empty-state">Loading bookings...</p>
+                </div>
+            </div>
+
+            <!-- Favorites Page -->
+            <div id="favorites" class="page">
+                <div class="page-header">
+                    <h1>Favorite Providers</h1>
+                </div>
+                <div id="favoritesList" class="bookings-grid">
+                    <p class="empty-state">Loading favorites...</p>
                 </div>
             </div>
 
@@ -411,7 +442,7 @@
     <script src="js/location-autocomplete.js"></script>
     <script src="js/main.js?v=2"></script>
     <script src="js/booking.js?v=1012"></script>
-    <script src="js/dashboard.js?v=20"></script>
+    <script src="js/dashboard.js?v=25"></script>
 </body>
 
 </html>

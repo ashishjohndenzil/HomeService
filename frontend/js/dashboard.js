@@ -94,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Load services for the appropriate dashboard
     if (userType === 'customer') {
         loadCustomerServices();
+        loadFavorites(); // Load favorites initially
     } else {
         loadProviderServices();
     }
@@ -480,6 +481,11 @@ function loadProviderServices() {
                     ratingElement.textContent = avgRating;
                 }
 
+                // Provider Badge
+                if (typeof updateSidebarBadge === 'function') {
+                    updateSidebarBadge('badge-services', data.services.length);
+                }
+
             } else {
                 servicesContent.innerHTML = '<p class="empty-state">No services added yet. <a href="#" onclick="showAddServiceModal()">Add your first service</a></p>';
 
@@ -487,6 +493,11 @@ function loadProviderServices() {
                 const ratingElement = document.getElementById('rating');
                 if (ratingElement) {
                     ratingElement.textContent = '0.0';
+                }
+
+                // Provider Badge
+                if (typeof updateSidebarBadge === 'function') {
+                    updateSidebarBadge('badge-services', 0);
                 }
             }
         })
@@ -590,6 +601,11 @@ function createBookingElement(booking, userType) {
 
     const statusBadge = getStatusBadge(booking.status);
 
+    // Debug provider ID for favorites
+    if (booking.status === 'completed') {
+        console.log('Booking Completed:', booking.id, 'Provider ID:', booking.provider_id);
+    }
+
     if (userType === 'customer') {
         div.innerHTML = `
             <div class="booking-header">
@@ -632,6 +648,9 @@ function createBookingElement(booking, userType) {
                 
                 ${booking.status === 'completed' ?
                 `<button class="btn btn-sm btn-outline-primary" onclick="openReceiptModal(${booking.id})" style="border: 1px solid #3b82f6; color: #3b82f6; background: transparent;">Receipt</button>` : ''}
+
+                ${booking.status === 'completed' && booking.provider_id ?
+                `<button class="btn btn-sm btn-outline-secondary" onclick="toggleFavorite(${booking.provider_id}, this)" style="border: 1px solid #6b7280; color: #6b7280; background: transparent;">🤍 Favorite</button>` : ''}
 
                 ${booking.status === 'completed' ?
                 (booking.user_rating
@@ -688,14 +707,17 @@ function createBookingElement(booking, userType) {
                 ${booking.status === 'confirmed' ? `
                     <button class="btn btn-sm btn-success" onclick="updateBookingStatus(${booking.id}, 'completed')">Mark Complete</button>
                 ` : ''}
-                ${booking.status === 'completed' && booking.user_rating ? `
-                    <div style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%;">
+
+                ${booking.status === 'completed' ?
+                (booking.user_rating
+                    ? `<div style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%;">
                         <div class="user-rating-display" style="display:inline-flex; align-items:center; gap:5px; background:#fef3c7; padding:4px 10px; border-radius:15px; border:1px solid #fcd34d; flex-shrink: 0;">
                             <span style="color:#d97706; font-weight:bold;">${booking.user_rating} ★</span>
                         </div>
                         ${booking.user_review ? `<div style="color: #4b5563; font-style: italic; font-size: 0.9rem; max-width: 400px; text-align: left;">"${booking.user_review}"</div>` : ''}
-                    </div>
-                ` : ''}
+                    </div>`
+                    : '')
+                : ''}
             </div>
         `;
     }
@@ -726,19 +748,42 @@ function updateDashboardStats(bookings, userType) {
         const upcomingElement = document.getElementById('upcomingCount');
         const completedElement = document.getElementById('completedCount');
         const spentElement = document.getElementById('totalSpent');
+        const pendingElement = document.getElementById('pendingCount');
 
         if (upcomingElement) upcomingElement.textContent = upcoming;
         if (completedElement) completedElement.textContent = completed;
         if (spentElement) spentElement.textContent = '₹' + totalSpent.toFixed(2);
+
+        const pending = bookings.filter(b => b.status === 'pending').length;
+        if (pendingElement) pendingElement.textContent = pending;
+
+        // Customer Badges
+        if (typeof updateSidebarBadge === 'function') {
+            updateSidebarBadge('badge-requests', upcoming + pending); // Active bookings
+        }
     } else {
         const pending = bookings.filter(b => b.status === 'pending').length;
+        const upcoming = bookings.filter(b => b.status === 'confirmed').length;
         const completed = bookings.filter(b => b.status === 'completed').length;
+
+        // Total Reviews from all bookings that have a user_rating
+        const totalReviews = bookings.filter(b => b.user_rating != null && b.user_rating !== undefined).length;
+        const totalReviewsElement = document.getElementById('totalReviews');
+        if (totalReviewsElement) totalReviewsElement.textContent = totalReviews;
 
         const pendingElement = document.getElementById('pendingCount');
         const completedElement = document.getElementById('completedCount');
+        const upcomingElement = document.getElementById('upcomingCount');
 
         if (pendingElement) pendingElement.textContent = pending;
         if (completedElement) completedElement.textContent = completed;
+        if (upcomingElement) upcomingElement.textContent = upcoming;
+
+        // Provider Badges
+        if (typeof updateSidebarBadge === 'function') {
+            updateSidebarBadge('badge-requests', pending);
+            updateSidebarBadge('badge-reviews', totalReviews);
+        }
 
         // Calculate Earnings
         const totalEarnings = bookings
@@ -755,6 +800,23 @@ function updateDashboardStats(bookings, userType) {
         // For this version, we'll just show total as monthly logic is complex without date filtering
         const earningsPageMonthly = document.querySelector('#earnings .earnings-card:first-child .amount');
         if (earningsPageMonthly) earningsPageMonthly.textContent = '₹' + totalEarnings.toFixed(2);
+    }
+}
+
+// Helper to update sidebar badge visibility and count
+function updateSidebarBadge(id, count) {
+    const badge = document.getElementById(id);
+    if (!badge) return;
+
+    // Parse count to int, treating undefined/null as 0
+    const num = parseInt(count) || 0;
+
+    if (num > 0) {
+        badge.textContent = num > 99 ? '99+' : num; // Cap at 99+
+        badge.style.display = 'inline-flex';
+    } else {
+        badge.style.display = 'none';
+        badge.textContent = '0';
     }
 }
 
@@ -797,6 +859,7 @@ function switchPage(pageId) {
     if (pageId === 'notifications') loadNotificationsPage();
     if (pageId === 'calendar') loadCalendarPage();
     if (pageId === 'my-reviews') loadProviderReviews();
+    if (pageId === 'favorites') loadFavorites();
 }
 
 // Logout function
@@ -3221,3 +3284,172 @@ window.addEventListener('click', function (event) {
         if (typeof closeReceiptModal === 'function') closeReceiptModal();
     }
 });
+
+// Favorites Logic
+async function loadFavorites() {
+    console.log('loadFavorites() called');
+    const container = document.getElementById('favoritesList');
+    if (!container) {
+        console.error('favoritesList container not found');
+        return;
+    }
+
+    container.innerHTML = '<div class="loading-spinner"></div> Loading...';
+
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            container.innerHTML = '<div class="empty-state">Please log in to view favorites.</div>';
+            return;
+        }
+
+        console.log('Fetching favorites...');
+        const response = await fetch('/HomeService/backend/api/get-favorites.php', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        const text = await response.text();
+        console.log('Favorites response:', text);
+
+        try {
+            const data = JSON.parse(text);
+            if (data.success) {
+                renderFavorites(data.favorites);
+
+                // Update Dashboard Stat
+                const favCountElement = document.getElementById('favoritesCount');
+                if (favCountElement) {
+                    favCountElement.textContent = data.favorites ? data.favorites.length : 0;
+                }
+
+                // Customer Badge
+                if (typeof updateSidebarBadge === 'function') {
+                    updateSidebarBadge('badge-favorites', data.favorites ? data.favorites.length : 0);
+                }
+            } else {
+                container.innerHTML = `<div class="empty-state">Failed: ${data.message}</div>`;
+            }
+        } catch (e) {
+            console.error('JSON Parse Error:', e);
+            container.innerHTML = `<div class="empty-state">Server Error: Invalid JSON response.</div>`;
+        }
+    } catch (error) {
+        console.error('Network Error loading favorites:', error);
+        container.innerHTML = `<div class="empty-state">Network Error: ${error.message}</div>`;
+    }
+}
+
+function renderFavorites(favorites) {
+    const container = document.getElementById('favoritesList');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!favorites || favorites.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">❤️</div>
+                <h3>No Favorites Yet</h3>
+                <p>Mark providers as favorites from your past bookings to see them here.</p>
+                <button onclick="switchPage('bookings')" style="margin-top:0.5rem; padding:0.55rem 1.5rem; border:2px solid #3b82f6; background:transparent; color:#3b82f6; border-radius:999px; font-size:0.9rem; font-weight:600; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#3b82f6';this.style.color='#fff';" onmouseout="this.style.background='transparent';this.style.color='#3b82f6';">📅 View My Bookings</button>
+            </div>`;
+        return;
+    }
+
+    favorites.forEach(fav => {
+        const card = document.createElement('div');
+        card.className = 'booking-card'; // Reuse booking card style
+
+        // Stars
+        let stars = '';
+        const rating = parseFloat(fav.rating) || 0;
+        for (let i = 1; i <= 5; i++) {
+            stars += i <= rating ? '⭐' : '☆';
+        }
+
+        card.innerHTML = `
+            <div class="booking-header">
+                <div>
+                    <h3>${fav.provider_name}</h3>
+                    <div style="color:#6b7280; font-size:0.9rem;">${fav.service_name}</div>
+                </div>
+                <div style="color:#f59e0b;">${stars}</div>
+            </div>
+            <div class="booking-details">
+                <div class="detail-item">
+                    <span class="icon">💼</span>
+                    <span>${fav.experience_years} years experience</span>
+                </div>
+                <div class="detail-item">
+                    <span class="icon">💰</span>
+                    <span>₹${fav.hourly_rate}/hr</span>
+                </div>
+            </div>
+            <div class="booking-actions" style="margin-top:1rem; display: flex; gap: 10px;">
+                <button class="btn btn-primary" style="flex: 1;" onclick="openBookingModal(${fav.service_id}, ${fav.provider_id})">
+                    Book Now
+                </button>
+                <button class="btn btn-danger" style="flex: 1;" onclick="toggleFavorite(${fav.provider_id}, this)">
+                    💔 Remove Favorite
+                </button>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+async function toggleFavorite(providerId, btnElement) {
+    if (!providerId) return;
+
+    // Optimistic UI update (optional, but good for UX)
+    const originalText = btnElement ? btnElement.innerHTML : '';
+    if (btnElement) btnElement.innerHTML = '⏳ Updating...';
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/HomeService/backend/api/toggle-favorite.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ provider_id: providerId })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            // Fix toast usage: title, message, icon
+            const icon = data.action === 'added' ? '❤️' : '💔';
+            const title = data.action === 'added' ? 'Favorite Added' : 'Favorite Removed';
+            showToast(title, data.message, icon);
+
+            // Always reload favorites to keep cache fresh
+            loadFavorites();
+
+            // If on bookings page, toggle button state
+            if (btnElement) {
+                if (data.action === 'added') {
+                    btnElement.innerHTML = '❤️ Favorited';
+                    btnElement.classList.add('btn-danger'); // Optional styling
+                    btnElement.style.color = '#dc2626';
+                    btnElement.style.borderColor = '#dc2626';
+                } else {
+                    btnElement.innerHTML = '🤍 Favorite';
+                    btnElement.classList.remove('btn-danger');
+                    btnElement.style.color = '#6b7280'; // Gray
+                    btnElement.style.borderColor = '#6b7280';
+                }
+            }
+        } else {
+            showToast('Error', data.message || 'Failed to update', '⚠️');
+            if (btnElement) btnElement.innerHTML = originalText;
+        }
+    } catch (error) {
+        console.error('Error toggling favorite:', error);
+        showToast('Error', 'Network request failed', '⚠️');
+        if (btnElement) btnElement.innerHTML = originalText;
+    }
+}
+
+window.loadFavorites = loadFavorites;
+window.toggleFavorite = toggleFavorite;

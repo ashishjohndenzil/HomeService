@@ -26,6 +26,12 @@ try {
     // Total Revenue (Completed Bookings)
     $stats['total_revenue'] = $pdo->query("SELECT SUM(total_amount) FROM bookings WHERE status = 'completed'")->fetchColumn();
 
+    // Active Services
+    $stats['active_services'] = $pdo->query("SELECT COUNT(*) FROM services")->fetchColumn();
+
+    // Pending Reports
+    $stats['pending_reports'] = $pdo->query("SELECT COUNT(*) FROM reports WHERE status = 'pending'")->fetchColumn();
+
     // --- Chart Data ---
 
     // --- Chart Data (Category Based, No Trends) ---

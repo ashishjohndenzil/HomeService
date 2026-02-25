@@ -20,6 +20,7 @@ function createBookingModal() {
                 <div class="booking-modal-body">
                     <div id="booking-step-form">
                         <form id="bookingForm">
+                            <input type="hidden" id="bookingProviderId" name="provider_id" value="">
                             <div class="form-group">
                                 <label for="serviceSelect">Service</label>
                                 <select id="serviceSelect" name="service_id" required>
@@ -331,6 +332,11 @@ async function submitBookingRaw(transactionId) {
         transaction_id: transactionId
     };
 
+    const providerIdVal = formData.get('provider_id');
+    if (providerIdVal) {
+        bookingData.provider_id = parseInt(providerIdVal);
+    }
+
     console.log('Sending Booking Data:', bookingData);
 
     try {
@@ -459,6 +465,12 @@ async function openBookingModal(serviceId = null, providerId = null) {
             // But if we want it to work when user selects manually, the listener above handles it.
         }
     }
+
+    // Preset provider if provided
+    const providerInput = document.getElementById('bookingProviderId');
+    if (providerInput) {
+        providerInput.value = providerId || '';
+    }
 }
 
 // Close booking modal
@@ -474,6 +486,9 @@ function closeBookingModal() {
         // Reset state
         const form = document.getElementById('bookingForm');
         if (form) form.reset();
+
+        const providerInput = document.getElementById('bookingProviderId');
+        if (providerInput) providerInput.value = '';
 
         const stepPayment = document.getElementById('booking-step-payment');
         if (stepPayment) stepPayment.style.display = 'none';
@@ -587,6 +602,11 @@ function submitBooking() {
         address: formData.get('address'),
         total_amount: parseFloat(formData.get('total_amount'))
     };
+
+    const providerIdVal = formData.get('provider_id');
+    if (providerIdVal) {
+        bookingData.provider_id = parseInt(providerIdVal);
+    }
 
     // Validate
     if (!bookingData.service_id || !bookingData.booking_date || !bookingData.booking_time || !bookingData.total_amount || !bookingData.address) {
