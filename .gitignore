@@ -1,34 +1,44 @@
-# Environment variables
+# Sensitive Configuration Files
+backend/config.local.php
+backend/api/cashfree_config.local.php
+
+# Environment files
 .env
 .env.local
 .env.*.local
 
-# Configuration files with sensitive data
-backend/api/cashfree_config.php
-backend/config.php
+# Database
+*.sql
+!backend/db_schema.sql
 
 # Logs
 *.log
+error.log
 validation_log.txt
-validation_error.txt
 
-# OS files
-.DS_Store
-Thumbs.db
+# Uploads (user content)
+backend/uploads/*
+!backend/uploads/profiles/.gitkeep
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Node modules
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Node modules (if using npm)
 node_modules/
 
-# Uploads directory (keep structure but ignore contents)
-backend/uploads/*
-!backend/uploads/.gitkeep
-
-# Testing
-tests/node_modules/
-test_homeservice.py
+# Vendor (if using composer)
+vendor/

@@ -765,6 +765,53 @@ select {
     border-color: var(--secondary-color);
 }
 
+/* Distinctive styling for completed bookings */
+.booking-item.booking-completed {
+    border-left: 4px solid #4f46e5;
+    background: #f8fafc;
+    /* Very light slate, slightly different from pure white */
+    opacity: 0.95;
+    /* Give it a slightly 'done' feel */
+}
+
+.booking-item.booking-completed .booking-info h3 {
+    color: #3730a3;
+}
+
+/* Distinctive styling for confirmed bookings */
+.booking-item.booking-confirmed {
+    border-left: 4px solid #10b981;
+    background: #f0fdf4;
+    /* Very light green */
+}
+
+.booking-item.booking-confirmed .booking-info h3 {
+    color: #065f46;
+}
+
+/* Distinctive styling for pending bookings */
+.booking-item.booking-pending {
+    border-left: 4px solid #f59e0b;
+    background: #fffbeb;
+    /* Very light amber */
+}
+
+.booking-item.booking-pending .booking-info h3 {
+    color: #92400e;
+}
+
+/* Distinctive styling for cancelled bookings */
+.booking-item.booking-cancelled {
+    border-left: 4px solid #ef4444;
+    background: #fef2f2;
+    /* Very light red */
+    opacity: 0.8;
+}
+
+.booking-item.booking-cancelled .booking-info h3 {
+    color: #991b1b;
+}
+
 /* Unread notification styling */
 .booking-item.notif-unread {
     border-left: 4px solid var(--secondary-color);
@@ -1234,6 +1281,19 @@ select {
     pointer-events: none;
     border: none;
     box-shadow: none;
+}
+
+/* Visually dim dates that have already passed */
+.cal-day.past-date {
+    background: #f9fafb;
+    /* Very light gray */
+    opacity: 0.6;
+    /* Dim the entire block slightly */
+}
+
+.cal-day.past-date .cal-day-number {
+    color: #9ca3af;
+    /* Make the number gray instead of dark */
 }
 
 .cal-day-number {

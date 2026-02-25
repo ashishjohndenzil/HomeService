@@ -2440,6 +2440,12 @@ function renderCalendarGrid() {
 
         if (isCurrentMonth && d === today.getDate()) {
             cell.classList.add('today');
+        } else if (
+            calCurrentYear < today.getFullYear() ||
+            (calCurrentYear === today.getFullYear() && calCurrentMonth < today.getMonth()) ||
+            (isCurrentMonth && d < today.getDate())
+        ) {
+            cell.classList.add('past-date');
         }
 
         if (bookedDayMap[d]) {
