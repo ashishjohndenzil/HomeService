@@ -21,18 +21,14 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'home_service_booking');
 
-// Load local configuration (not tracked by Git)
-// Copy config.local.example.php to config.local.php and add your credentials
-if (file_exists(__DIR__ . '/config.local.php')) {
-    require_once __DIR__ . '/config.local.php';
-} else {
-    // Default values for local development
-    define('GOOGLE_CLIENT_ID', '');
-    define('GOOGLE_CLIENT_SECRET', '');
-    define('GOOGLE_REDIRECT_URI', 'http://localhost/HomeService/backend/google_callback.php');
-    define('GMAIL_ACCOUNT', '');
-    define('GMAIL_APP_PASSWORD', '');
-}
+// Google OAuth Configuration
+define('GOOGLE_CLIENT_ID', '190292476430-chm5q72tenmqhaf2465ea53931jfdotu.apps.googleusercontent.com');
+define('GOOGLE_CLIENT_SECRET', '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');
+define('GOOGLE_REDIRECT_URI', 'http://localhost/HomeService/backend/google_callback.php');
+
+// Gmail SMTP Configuration for Password Reset Emails
+define('GMAIL_ACCOUNT', 'ashishyt100@gmail.com'); // Your Gmail address
+define('GMAIL_APP_PASSWORD', 'rqkaxjowqenermzh'); // Gmail app password
 
 // Create PDO connection
 try {

@@ -1,44 +1,12 @@
-# Sensitive Configuration Files
+# Secrets and config files
+backend/config.php
 backend/config.local.php
+backend/api/cashfree_config.php
 backend/api/cashfree_config.local.php
+
+# Logs
+backend/*.log
+*.log
 
 # Environment files
 .env
-.env.local
-.env.*.local
-
-# Database
-*.sql
-!backend/db_schema.sql
-
-# Logs
-*.log
-error.log
-validation_log.txt
-
-# Uploads (user content)
-backend/uploads/*
-!backend/uploads/profiles/.gitkeep
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-
-# Node modules (if using npm)
-node_modules/
-
-# Vendor (if using composer)
-vendor/

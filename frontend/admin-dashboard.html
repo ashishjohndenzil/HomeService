@@ -7,7 +7,7 @@
     <title>Admin Dashboard - HomeService</title>
     <link rel="stylesheet" href="css/style.css?v=3">
     <link rel="stylesheet" href="css/dashboard.css?v=10">
-    <link rel="stylesheet" href="css/admin-dashboard.css?v=5">
+    <link rel="stylesheet" href="css/admin-dashboard.css?v=8">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
@@ -408,7 +408,7 @@
     <!-- Add Service Modal -->
     <div id="addServiceModal" class="modal">
         <div class="modal-content">
-            <span class="close-modal" onclick="closeServiceModal('add')">&times;</span>
+            <span class="close" onclick="closeServiceModal('add')">&times;</span>
             <h2>Add New Service</h2>
             <form id="addServiceForm" onsubmit="event.preventDefault(); saveService('add');">
                 <div class="form-group">
@@ -439,7 +439,7 @@
     <!-- Edit Service Modal -->
     <div id="editServiceModal" class="modal">
         <div class="modal-content">
-            <span class="close-modal" onclick="closeServiceModal('edit')">&times;</span>
+            <span class="close" onclick="closeServiceModal('edit')">&times;</span>
             <h2>Edit Service</h2>
             <form id="editServiceForm" onsubmit="event.preventDefault(); saveService('edit');">
                 <input type="hidden" id="editServiceId">
