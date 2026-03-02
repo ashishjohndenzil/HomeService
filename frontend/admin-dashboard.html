@@ -407,76 +407,62 @@
 
     <!-- Add Service Modal -->
     <div id="addServiceModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content">
             <span class="close-modal" onclick="closeServiceModal('add')">&times;</span>
             <h2>Add New Service</h2>
             <form id="addServiceForm" onsubmit="event.preventDefault(); saveService('add');">
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="addServiceName" style="display:block; margin-bottom:0.5rem; font-weight:600;">Service
-                        Name</label>
-                    <input type="text" id="addServiceName" class="form-control" required
-                        placeholder="e.g., Plumbing Repair"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                <div class="form-group">
+                    <label for="addServiceName">Service Name</label>
+                    <input type="text" id="addServiceName" required placeholder="e.g., Plumbing Repair">
                 </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="addServiceCategory"
-                        style="display:block; margin-bottom:0.5rem; font-weight:600;">Category</label>
-                    <input type="text" id="addServiceCategory" class="form-control" required
-                        placeholder="e.g., Plumbing"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                <div class="form-group">
+                    <label for="addServiceCategory">Category</label>
+                    <input type="text" id="addServiceCategory" required placeholder="e.g., Plumbing">
                 </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="addServiceDescription"
-                        style="display:block; margin-bottom:0.5rem; font-weight:600;">Description</label>
-                    <textarea id="addServiceDescription" class="form-control" rows="3" required
-                        placeholder="Service description..."
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: inherit; resize: vertical;"></textarea>
+                <div class="form-group">
+                    <label for="addServiceDescription">Description</label>
+                    <textarea id="addServiceDescription" rows="3" required
+                        placeholder="Service description..."></textarea>
                 </div>
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label for="addServiceIcon" style="display:block; margin-bottom:0.5rem; font-weight:600;">Icon
-                        (Emoji or URL)</label>
-                    <input type="text" id="addServiceIcon" class="form-control" placeholder="e.g., 🔧"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                <div class="form-group">
+                    <label for="addServiceIcon">Icon (Emoji or URL)</label>
+                    <input type="text" id="addServiceIcon" placeholder="e.g., 🔧">
                 </div>
-                <button type="submit" class="btn btn-primary"
-                    style="width: 100%; padding: 0.75rem; font-size: 1rem;">Add Service</button>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeServiceModal('add')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Service</button>
+                </div>
             </form>
         </div>
     </div>
 
     <!-- Edit Service Modal -->
     <div id="editServiceModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content">
             <span class="close-modal" onclick="closeServiceModal('edit')">&times;</span>
             <h2>Edit Service</h2>
             <form id="editServiceForm" onsubmit="event.preventDefault(); saveService('edit');">
                 <input type="hidden" id="editServiceId">
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="editServiceName" style="display:block; margin-bottom:0.5rem; font-weight:600;">Service
-                        Name</label>
-                    <input type="text" id="editServiceName" class="form-control" required
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                <div class="form-group">
+                    <label for="editServiceName">Service Name</label>
+                    <input type="text" id="editServiceName" required>
                 </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="editServiceCategory"
-                        style="display:block; margin-bottom:0.5rem; font-weight:600;">Category</label>
-                    <input type="text" id="editServiceCategory" class="form-control" required
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                <div class="form-group">
+                    <label for="editServiceCategory">Category</label>
+                    <input type="text" id="editServiceCategory" required>
                 </div>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label for="editServiceDescription"
-                        style="display:block; margin-bottom:0.5rem; font-weight:600;">Description</label>
-                    <textarea id="editServiceDescription" class="form-control" rows="3" required
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: inherit; resize: vertical;"></textarea>
+                <div class="form-group">
+                    <label for="editServiceDescription">Description</label>
+                    <textarea id="editServiceDescription" rows="3" required></textarea>
                 </div>
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label for="editServiceIcon" style="display:block; margin-bottom:0.5rem; font-weight:600;">Icon
-                        (Emoji or URL)</label>
-                    <input type="text" id="editServiceIcon" class="form-control"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                <div class="form-group">
+                    <label for="editServiceIcon">Icon (Emoji or URL)</label>
+                    <input type="text" id="editServiceIcon">
                 </div>
-                <button type="submit" class="btn btn-primary"
-                    style="width: 100%; padding: 0.75rem; font-size: 1rem;">Save Changes</button>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeServiceModal('edit')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
             </form>
         </div>
     </div>
