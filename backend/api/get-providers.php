@@ -16,7 +16,7 @@ if ($method === 'GET') {
     }
 
     // Join providers and users to get full details
-    $sql = "SELECT p.id as provider_id, u.full_name, u.profile_image,
+    $sql = "SELECT p.id as provider_id, u.full_name, u.profile_image, u.location,
                  p.hourly_rate, p.rating, p.experience_years, p.bio, p.is_verified,
                  p.service_id, s.name AS service_name, s.category,
                  (SELECT COALESCE(AVG(hourly_rate), CASE 

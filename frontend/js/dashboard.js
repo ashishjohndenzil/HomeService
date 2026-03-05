@@ -377,6 +377,10 @@ function renderProviders(providers) {
             
             <p class="provider-bio">${provider.bio || 'Professional service provider.'}</p>
             
+            <div class="provider-location" style="margin-bottom: 15px; font-size: 0.9em; color: #555; display: flex; align-items: center; gap: 5px;">
+                <span style="font-size: 1.1em;">📍</span> ${provider.location || 'Location not specified'}
+            </div>
+            
             <div class="provider-pricing">
                 ${parseFloat(provider.hourly_rate) > 0
                 ? `<span class="price">₹${parseFloat(provider.hourly_rate).toFixed(0)}<small>/hr</small></span>`

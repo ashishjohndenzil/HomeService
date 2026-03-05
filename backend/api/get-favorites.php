@@ -42,7 +42,8 @@ try {
             s.id as service_id,
             s.name as service_name,
             u.full_name as provider_name,
-            u.profile_image
+            u.profile_image,
+            u.location
         FROM favorites f
         JOIN providers p ON f.provider_id = p.id
         JOIN users u ON p.user_id = u.id

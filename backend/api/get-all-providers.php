@@ -11,7 +11,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $service_id = isset($_GET['service_id']) ? $_GET['service_id'] : null;
 
-    $sql = "SELECT p.id as provider_id, u.id as user_id, u.full_name, u.profile_image,
+    $sql = "SELECT p.id as provider_id, u.id as user_id, u.full_name, u.profile_image, u.location,
                  p.hourly_rate, p.rating, p.experience_years, p.bio, p.is_verified,
                  p.service_id, s.name AS service_name, s.category,
                  (SELECT COUNT(*) FROM bookings WHERE provider_id = p.id AND status = 'completed') as completed_jobs

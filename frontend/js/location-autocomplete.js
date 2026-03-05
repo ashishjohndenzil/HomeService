@@ -1,7 +1,9 @@
 /**
- * HomeService Location Autocomplete v3.0
+ * HomeService Location Autocomplete v4.0
  * Uses OpenStreetMap Nominatim API
- * Consolidated from booking.js and location-autocomplete.js
+ * Fixes: Works inside animated/transformed modals by using a RAF-based
+ *        position loop while the dropdown is open, instead of relying on
+ *        position:fixed which breaks when a CSS transform ancestor exists.
  */
 
 (function () {
@@ -12,17 +14,17 @@
             position: fixed;
             background: white;
             border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            z-index: 2147483647; /* Max Z-Index */
-            max-height: 250px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+            z-index: 2147483647;
+            max-height: 260px;
             overflow-y: auto;
             font-family: 'Segoe UI', sans-serif;
             font-size: 14px;
             display: none;
             box-sizing: border-box;
-            width: auto;
-            min-width: 250px;
+            min-width: 220px;
+            pointer-events: auto;
         }
         .geo-suggestion-item {
             padding: 10px 14px;
@@ -30,15 +32,21 @@
             border-bottom: 1px solid #f3f4f6;
             color: #333;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 10px;
+            transition: background 0.15s;
+        }
+        .geo-suggestion-item:last-child {
+            border-bottom: none;
         }
         .geo-suggestion-item:hover {
             background-color: #f0f9ff;
         }
         .geo-suggestion-icon {
-            color: #3b82f6; 
+            color: #3b82f6;
             font-size: 1.1em;
+            margin-top: 2px;
+            flex-shrink: 0;
         }
         .geo-suggestion-text {
             display: flex;
@@ -47,22 +55,51 @@
         .geo-suggestion-main {
             font-weight: 600;
             color: #111827;
+            line-height: 1.3;
         }
         .geo-suggestion-sub {
-            font-size: 0.8em;
+            font-size: 0.78em;
             color: #6b7280;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+        .geo-loading-item {
+            padding: 12px 14px;
+            color: #6b7280;
+            font-size: 0.88em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .geo-loading-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #3b82f6;
+            animation: geoDotBounce 0.8s infinite alternate;
+        }
+        .geo-loading-dot:nth-child(2) { animation-delay: 0.2s; }
+        .geo-loading-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes geoDotBounce {
+            from { opacity: 0.3; transform: scale(0.7); }
+            to   { opacity: 1;   transform: scale(1.1); }
         }
     `;
     document.head.appendChild(style);
 
     class LocationAutocomplete {
-        constructor(inputId) {
-            this.input = document.getElementById(inputId);
+        constructor(inputEl) {
+            // Accept either an element or an ID string
+            this.input = (typeof inputEl === 'string')
+                ? document.getElementById(inputEl)
+                : inputEl;
+
             if (!this.input) return;
 
             // Prevent duplicates
-            if (this.input.dataset.autocompleteAttached === 'true') return;
-            this.input.dataset.autocompleteAttached = 'true';
+            if (this.input.dataset.geoAttached === 'true') return;
+            this.input.dataset.geoAttached = 'true';
 
             this.container = document.createElement('div');
             this.container.className = 'geo-suggestions-container';
@@ -70,64 +107,86 @@
 
             this.debounceTimer = null;
             this.abortController = null;
+            this._rafId = null;
 
-            this.init();
+            this._bindEvents();
         }
 
-        init() {
-            this.input.addEventListener('input', () => this.handleInput());
-            this.input.addEventListener('focus', () => this.updatePosition());
+        _bindEvents() {
+            this.input.addEventListener('input', () => this._handleInput());
+            this.input.addEventListener('focus', () => { if (this.container.style.display !== 'none') this._startPositionLoop(); });
 
-            window.addEventListener('resize', () => this.updatePosition());
-            window.addEventListener('scroll', () => this.updatePosition(), true);
-
+            // Close on outside click
             document.addEventListener('click', (e) => {
                 if (e.target !== this.input && !this.container.contains(e.target)) {
-                    this.hide();
+                    this._hide();
                 }
-            });
+            }, true);
+
+            // Reposition on all scroll events (including inside modal)
+            window.addEventListener('scroll', () => this._updatePosition(), true);
+            window.addEventListener('resize', () => this._updatePosition());
         }
 
-        handleInput() {
+        _handleInput() {
             clearTimeout(this.debounceTimer);
             const query = this.input.value.trim();
-            if (query.length < 3) {
-                this.hide();
+
+            if (query.length < 2) {   // trigger at 2+ chars
+                this._hide();
                 return;
             }
-            this.debounceTimer = setTimeout(() => this.fetchSuggestions(query), 400);
+
+            // Show loading indicator immediately
+            this._showLoading();
+
+            this.debounceTimer = setTimeout(() => this._fetch(query), 380);
         }
 
-        async fetchSuggestions(query) {
+        _showLoading() {
+            this.container.innerHTML = `
+                <div class="geo-loading-item">
+                    <span class="geo-loading-dot"></span>
+                    <span class="geo-loading-dot"></span>
+                    <span class="geo-loading-dot"></span>
+                    Searching…
+                </div>`;
+            this._show();
+        }
+
+        async _fetch(query) {
             if (this.abortController) this.abortController.abort();
             this.abortController = new AbortController();
 
             try {
-                this.input.style.borderColor = '#3b82f6'; // Loading blue border
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=in`, {
-                    signal: this.abortController.signal
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=6&countrycodes=in`;
+                const res = await fetch(url, {
+                    signal: this.abortController.signal,
+                    headers: { 'Accept-Language': 'en' }
                 });
                 if (!res.ok) throw new Error('API Error');
                 const data = await res.json();
-                this.render(data);
+                this._render(data);
             } catch (err) {
-                if (err.name !== 'AbortError') console.error(err);
-            } finally {
-                this.input.style.borderColor = '';
+                if (err.name !== 'AbortError') {
+                    this.container.innerHTML = '<div class="geo-loading-item">No results found. Try a more specific query.</div>';
+                }
             }
         }
 
-        render(data) {
+        _render(data) {
             this.container.innerHTML = '';
-            if (data.length === 0) {
-                this.hide();
+
+            if (!data || data.length === 0) {
+                this.container.innerHTML = '<div class="geo-loading-item">No results found for that location.</div>';
+                this._show();
                 return;
             }
 
             data.forEach(item => {
                 const parts = item.display_name.split(',');
-                const main = parts[0];
-                const sub = parts.slice(1).join(',').trim();
+                const main = parts[0].trim();
+                const sub = parts.slice(1, 4).join(',').trim();  // show up to 3 sub parts
 
                 const el = document.createElement('div');
                 el.className = 'geo-suggestion-item';
@@ -138,40 +197,102 @@
                         <span class="geo-suggestion-sub">${sub}</span>
                     </div>
                 `;
-                el.addEventListener('click', () => {
+                el.addEventListener('mousedown', (e) => {
+                    e.preventDefault();  // prevent input blur before click registers
                     this.input.value = item.display_name;
-                    this.hide();
-                    this.input.dispatchEvent(new Event('change'));
-                    this.input.dispatchEvent(new Event('input')); // Ensure both events fire
+                    this._hide();
+                    this.input.dispatchEvent(new Event('change', { bubbles: true }));
+                    this.input.focus();
                 });
                 this.container.appendChild(el);
             });
-            this.show();
+
+            this._show();
         }
 
-        show() {
-            this.updatePosition();
+        _show() {
             this.container.style.display = 'block';
+            this._updatePosition();
+            this._startPositionLoop();
         }
 
-        hide() {
+        _hide() {
             this.container.style.display = 'none';
+            this._stopPositionLoop();
         }
 
-        updatePosition() {
+        // RAF loop keeps position correct while modal is animating / scrolling
+        _startPositionLoop() {
+            this._stopPositionLoop();
+            const tick = () => {
+                if (this.container.style.display === 'none') return;
+                this._updatePosition();
+                this._rafId = requestAnimationFrame(tick);
+            };
+            this._rafId = requestAnimationFrame(tick);
+            // Stop the constant loop after 1 second (animation is done), 
+            // rely on scroll/resize events afterwards
+            setTimeout(() => this._stopPositionLoop(), 1000);
+        }
+
+        _stopPositionLoop() {
+            if (this._rafId) {
+                cancelAnimationFrame(this._rafId);
+                this._rafId = null;
+            }
+        }
+
+        _updatePosition() {
             if (this.container.style.display === 'none') return;
+
             const rect = this.input.getBoundingClientRect();
-            this.container.style.top = (rect.bottom + 4) + 'px';
-            this.container.style.left = rect.left + 'px';
-            this.container.style.width = rect.width + 'px';
+
+            // If the input is offscreen / in a hidden container, hide dropdown
+            if (rect.width === 0 && rect.height === 0) {
+                this.container.style.display = 'none';
+                return;
+            }
+
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const dropH = Math.min(260, this.container.scrollHeight || 260);
+
+            if (spaceBelow >= dropH || spaceBelow >= 120) {
+                // Place below
+                this.container.style.top = (rect.bottom + 4) + 'px';
+                this.container.style.left = rect.left + 'px';
+                this.container.style.width = rect.width + 'px';
+                this.container.style.bottom = 'auto';
+            } else {
+                // Place above
+                this.container.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+                this.container.style.top = 'auto';
+                this.container.style.left = rect.left + 'px';
+                this.container.style.width = rect.width + 'px';
+            }
         }
     }
 
-    // Expose Global Init
-    window.initLocationAutocomplete = function (inputId) {
-        // Delay slightly to ensure element exists if just created
+    // ---- Global init function ----
+    // Accepts either an element ID (string) or a DOM element
+    window.initLocationAutocomplete = function (inputRef) {
+        // Small delay to allow dynamic DOM injection to settle
         setTimeout(() => {
-            new LocationAutocomplete(inputId);
-        }, 100);
+            const el = (typeof inputRef === 'string')
+                ? document.getElementById(inputRef)
+                : inputRef;
+
+            if (!el) {
+                console.warn('[LocationAutocomplete] Element not found:', inputRef);
+                return;
+            }
+            new LocationAutocomplete(el);
+        }, 150);
     };
+
+    // Auto-init any element with data-geo-autocomplete="true" on the page
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-geo-autocomplete]').forEach(el => {
+            new LocationAutocomplete(el);
+        });
+    });
 })();
