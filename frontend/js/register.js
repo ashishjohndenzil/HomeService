@@ -233,7 +233,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Setup inline validation for all form fields
     const fullNameInput = document.getElementById('fullName');
     if (fullNameInput) {
-        fullNameInput.addEventListener('input', function () { validateFullName(this); });
+        fullNameInput.addEventListener('input', function () {
+            this.value = this.value.replace(/[^a-zA-Z\s'-]/g, '');
+            // Replace consecutive spaces with a single space
+            this.value = this.value.replace(/\s{2,}/g, ' ');
+            validateFullName(this);
+        });
         fullNameInput.addEventListener('blur', function () { validateFullName(this); });
     }
 

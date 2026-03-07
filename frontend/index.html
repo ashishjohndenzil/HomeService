@@ -736,9 +736,7 @@
                     <div class="pro-skeleton-line" style="width:80%"></div>
                 </div>
             </div>
-            <div class="pros-view-all">
-                <a href="register.html" class="btn btn-primary">Book a Professional</a>
-            </div>
+
         </div>
     </section>
 
@@ -782,6 +780,8 @@
         </div>
     </footer>
 
+    <script src="js/location-autocomplete.js"></script>
+    <script src="js/booking.js?v=8"></script>
     <script src="js/main.js"></script>
     <script>
         (function () {
@@ -827,6 +827,9 @@
                     <span class="pro-meta-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v6c0 1.1.9 2 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>${p.completed_jobs} jobs</span>
                 </div>
                 <div class="pro-rate">&#8377;${parseFloat(p.hourly_rate).toLocaleString('en-IN')}<span>/hr</span></div>
+                <div class="pro-actions" style="margin-top: 1rem; width: 100%;">
+                    <button class="btn btn-primary" style="width: 100%; border-radius: 8px; padding: 0.8rem;" onclick="openBookingModal(${p.service_id}, ${p.provider_id})">Book Now</button>
+                </div>
             `;
                 return card;
             }
@@ -853,7 +856,7 @@
 
                 // Update count label
                 const total = allProviders.length;
-                const shown = Math.min(filtered.length, 8);
+                const shown = Math.min(filtered.length, 8); // Because we slice(0,8)
                 countEl.innerHTML = `Showing <strong>${shown}</strong> of <strong>${total}</strong>`;
 
                 // Show/hide clear button when any filter is active

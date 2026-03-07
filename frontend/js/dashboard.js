@@ -1363,20 +1363,116 @@ function showNotification(message, type = 'info') {
 
 // Profile Editing Functions
 function enableProfileEditing() {
-    document.getElementById('settingsName').removeAttribute('readonly');
-    document.getElementById('settingsPhone').removeAttribute('readonly');
-    document.getElementById('settingsLocation').removeAttribute('readonly');
-    document.getElementById('settingsName').focus();
+    const nameInput = document.getElementById('settingsName');
+    const phoneInput = document.getElementById('settingsPhone');
+    const locationInput = document.getElementById('settingsLocation');
+
+    nameInput.removeAttribute('readonly');
+    phoneInput.removeAttribute('readonly');
+    locationInput.removeAttribute('readonly');
+    nameInput.focus();
 
     document.getElementById('editProfileBtn').style.display = 'none';
     document.getElementById('saveProfileBtn').style.display = 'block';
+
+    // Initial validation check
+    validateDashName(nameInput);
+    validateDashPhone(phoneInput);
 }
 
-// Real-time Phone Validation
+function clearDashValidation(field) {
+    if (!field) return;
+    const suggestion = field.parentElement.querySelector('.validation-suggestion');
+    if (suggestion) {
+        suggestion.textContent = '';
+        suggestion.className = 'validation-suggestion';
+        field.style.borderColor = '';
+    }
+}
+
+function createDashValidationSuggestion(field) {
+    let suggestion = field.parentElement.querySelector('.validation-suggestion');
+    if (!suggestion) {
+        suggestion = document.createElement('small');
+        suggestion.className = 'validation-suggestion';
+        field.parentElement.appendChild(suggestion);
+    }
+    return suggestion;
+}
+
+function validateDashName(field) {
+    const suggestion = createDashValidationSuggestion(field);
+    const name = field.value.trim();
+
+    if (!name) {
+        suggestion.textContent = 'Full name is required';
+        suggestion.className = 'validation-suggestion error-suggestion';
+        field.style.borderColor = '#ef4444';
+        return false;
+    }
+
+    if (name.length < 3) {
+        suggestion.textContent = 'Name should be at least 3 characters long';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+
+    if (!/^[a-zA-Z\s\'-]+$/.test(name)) {
+        suggestion.textContent = 'Name should only contain letters, spaces, hyphens, and apostrophes';
+        suggestion.className = 'validation-suggestion error-suggestion';
+        field.style.borderColor = '#ef4444';
+        return false;
+    }
+
+    suggestion.textContent = '✓ Name looks good';
+    suggestion.className = 'validation-suggestion success-suggestion';
+    field.style.borderColor = '#10b981';
+    return true;
+}
+
+function validateDashPhone(field) {
+    const suggestion = createDashValidationSuggestion(field);
+    const phone = field.value.trim();
+    const cleanPhone = phone.replace(/\D/g, '');
+
+    if (!phone) {
+        suggestion.textContent = 'Phone number is required';
+        suggestion.className = 'validation-suggestion error-suggestion';
+        field.style.borderColor = '#ef4444';
+        return false;
+    }
+
+    if (/[^0-9]/.test(phone)) {
+        suggestion.textContent = 'Please enter only numbers';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+
+    if (cleanPhone.length !== 10) {
+        if (cleanPhone.length < 10) {
+            suggestion.textContent = `Phone number must be exactly 10 digits (you have ${cleanPhone.length})`;
+        } else {
+            suggestion.textContent = `Phone number cannot exceed 10 digits (you have ${cleanPhone.length})`;
+        }
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+
+    suggestion.textContent = '✓ Phone number looks good';
+    suggestion.className = 'validation-suggestion success-suggestion';
+    field.style.borderColor = '#10b981';
+    return true;
+}
+
+// Real-time Phone Validation and Name Validation
 document.addEventListener('DOMContentLoaded', function () {
     const phoneInput = document.getElementById('settingsPhone');
     if (phoneInput) {
         phoneInput.addEventListener('input', function (e) {
+            if (this.hasAttribute('readonly')) return;
             // Remove non-numeric characters
             this.value = this.value.replace(/\D/g, '');
 
@@ -1384,20 +1480,63 @@ document.addEventListener('DOMContentLoaded', function () {
             if (this.value.length > 10) {
                 this.value = this.value.slice(0, 10);
             }
+            validateDashPhone(this);
+        });
+        phoneInput.addEventListener('blur', function () {
+            if (!this.hasAttribute('readonly')) validateDashPhone(this);
+        });
+    }
+
+    const nameInput = document.getElementById('settingsName');
+    if (nameInput) {
+        nameInput.addEventListener('input', function () {
+            if (!this.hasAttribute('readonly')) {
+                this.value = this.value.replace(/[^a-zA-Z\s'-]/g, '');
+
+                // Replace consecutive spaces with a single space
+                this.value = this.value.replace(/\s{2,}/g, ' ');
+
+                validateDashName(this);
+            }
+        });
+        nameInput.addEventListener('blur', function () {
+            if (!this.hasAttribute('readonly')) validateDashName(this);
         });
     }
 });
 
 function saveProfile() {
-    const name = document.getElementById('settingsName').value;
-    const phone = document.getElementById('settingsPhone').value;
-    const location = document.getElementById('settingsLocation').value;
+    const name = document.getElementById('settingsName').value.trim();
+    const phone = document.getElementById('settingsPhone').value.trim();
+    const location = document.getElementById('settingsLocation').value.trim();
 
     const token = localStorage.getItem('token');
+
+    // Name Validation
+    if (!name) {
+        showNotification('Full name is required', 'error');
+        return;
+    }
+
+    if (name.length < 3) {
+        showNotification('Name should be at least 3 characters long', 'error');
+        return;
+    }
+
+    if (!/^[a-zA-Z\s\'-]+$/.test(name)) {
+        showNotification('Name should only contain letters, spaces, hyphens, and apostrophes', 'error');
+        return;
+    }
 
     // Phone Validation
     if (!/^\d{10}$/.test(phone)) {
         showNotification('Phone number must be exactly 10 digits', 'error');
+        return;
+    }
+
+    // Location validation
+    if (!location) {
+        showNotification('Location is required', 'error');
         return;
     }
 
@@ -1433,6 +1572,9 @@ function saveProfile() {
                 document.getElementById('settingsName').setAttribute('readonly', true);
                 document.getElementById('settingsPhone').setAttribute('readonly', true);
                 document.getElementById('settingsLocation').setAttribute('readonly', true);
+
+                clearDashValidation(document.getElementById('settingsName'));
+                clearDashValidation(document.getElementById('settingsPhone'));
 
                 document.getElementById('editProfileBtn').style.display = 'block';
                 document.getElementById('saveProfileBtn').style.display = 'none';
