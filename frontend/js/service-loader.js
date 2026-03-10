@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
 function loadProvidersForPage(serviceId, container) {
     container.innerHTML = '<div class="loading-spinner">Loading professionals...</div>';
 
-    fetch(`../backend/api/get-providers.php?service_id=${serviceId}`)
+    fetch(`${API_BASE_URL}/get-providers.php?service_id=${serviceId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success && data.data.length > 0) {

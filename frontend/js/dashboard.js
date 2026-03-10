@@ -152,7 +152,7 @@ function loadCustomerServices() {
     const servicesContent = document.getElementById('servicesContent');
     if (!servicesContent) return;
 
-    fetch('/HomeService/backend/api/services.php')
+    fetch(API_BASE_URL + '/services.php')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Failed to fetch services');
@@ -309,7 +309,7 @@ function loadAllProviders() {
     const providersContent = document.getElementById('professionalsContent');
     if (!providersContent) return;
 
-    fetch('/HomeService/backend/api/get-all-providers.php')
+    fetch(API_BASE_URL + '/get-all-providers.php')
         .then(response => response.json())
         .then(data => {
             allProvidersCache = data.data || [];
@@ -430,7 +430,7 @@ function loadProviderServices() {
         return;
     }
 
-    fetch('/HomeService/backend/api/provider-services.php?token=' + encodeURIComponent(token), {
+    fetch(API_BASE_URL + '/provider-services.php?token=' + encodeURIComponent(token), {
         method: 'GET',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -525,7 +525,7 @@ function loadBookings(status = null) {
         return;
     }
 
-    let url = '/HomeService/backend/api/bookings.php?token=' + encodeURIComponent(token);
+    let url = API_BASE_URL + '/bookings.php?token=' + encodeURIComponent(token);
     if (status) {
         url += '&status=' + encodeURIComponent(status);
     }
@@ -547,6 +547,11 @@ function loadBookings(status = null) {
         })
         .then(data => {
             const bookingsContent = document.getElementById('bookingsContent');
+
+            if (!data.success) { // Added this block
+                bookingsContent.innerHTML = `<div class="empty-state" style="color:#ef4444;"><p><strong>Server Error:</strong> ${data.message || data.error || 'Error loading bookings'}</p></div>`;
+                return;
+            }
 
             if (data.success && data.bookings && data.bookings.length > 0) {
                 bookingsContent.innerHTML = '';
@@ -575,7 +580,10 @@ function loadBookings(status = null) {
             const bookingsContent = document.getElementById('bookingsContent');
             bookingsContent.innerHTML = `<div class="empty-state"><p>Error loading bookings.</p><small>${error.message}</small></div>`;
         });
-}// Create booking element for display
+}
+
+
+// Create booking element for display
 function createBookingElement(booking, userType) {
     const div = document.createElement('div');
     div.className = `booking-item booking-${booking.status}`;
@@ -912,7 +920,7 @@ async function cancelBooking(bookingId) {
 
     try {
         showLoadingState(true);
-        const response = await fetch('/HomeService/backend/api/update-booking-status.php', {
+        const response = await fetch(API_BASE_URL + '/update-booking-status.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -994,7 +1002,7 @@ function handleReviewSubmit() {
 
     const token = localStorage.getItem('token');
 
-    fetch('/HomeService/backend/api/submit-review.php', {
+    fetch(API_BASE_URL + '/submit-review.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -1046,7 +1054,7 @@ async function updateBookingStatus(bookingId, newStatus) {
 
     try {
         showLoadingState(true);
-        const response = await fetch('/HomeService/backend/api/update-booking-status.php', {
+        const response = await fetch(API_BASE_URL + '/update-booking-status.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1089,10 +1097,10 @@ function showAddServiceModal() {
 
     // Fetch both provider's existing services and all available services
     Promise.all([
-        fetch('/HomeService/backend/api/provider-services.php?token=' + encodeURIComponent(token), {
+        fetch(API_BASE_URL + '/provider-services.php?token=' + encodeURIComponent(token), {
             headers: { 'Authorization': 'Bearer ' + token }
         }).then(res => res.json()),
-        fetch('/HomeService/backend/api/services.php').then(res => res.json())
+        fetch(API_BASE_URL + '/services.php').then(res => res.json())
     ])
         .then(([providerData, allServicesData]) => {
             select.innerHTML = '<option value="">Select a service...</option>';
@@ -1100,7 +1108,10 @@ function showAddServiceModal() {
             const existingServiceIds = new Set();
             if (providerData.success && providerData.services) {
                 providerData.services.forEach(s => existingServiceIds.add(parseInt(s.service_id)));
+            } else if (!providerData.success) { // Added this block
+                showNotification(providerData.message || providerData.error || 'Failed to load provider services', 'error');
             }
+
 
             const allServices = allServicesData.services || allServicesData.data || [];
             // Remove duplicates in allServices just in case, and filter out existing ones
@@ -1169,7 +1180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('token');
             showLoadingState(true);
 
-            fetch('/HomeService/backend/api/add-service.php', {
+            fetch(API_BASE_URL + '/add-service.php', {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + token,
@@ -1214,7 +1225,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('token');
             showLoadingState(true);
 
-            fetch('/HomeService/backend/api/update-service.php', { // Reusing update-service.php
+            fetch(API_BASE_URL + '/update-service.php', { // Reusing update-service.php
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + token,
@@ -1274,7 +1285,7 @@ function deleteService(serviceId) {
     const token = localStorage.getItem('token');
     showLoadingState(true);
 
-    fetch('/HomeService/backend/api/delete-service.php', {
+    fetch(API_BASE_URL + '/delete-service.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -1542,7 +1553,7 @@ function saveProfile() {
 
     showLoadingState(true);
 
-    fetch('/HomeService/backend/api/update-profile.php', {
+    fetch(API_BASE_URL + '/update-profile.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -1651,7 +1662,7 @@ function uploadProfileImage(input) {
     // Show uploading ...
     showNotification('Uploading image...', 'info');
 
-    fetch('/HomeService/backend/api/upload-profile-image.php', {
+    fetch(API_BASE_URL + '/upload-profile-image.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token
@@ -1700,7 +1711,7 @@ function loadSchedule() {
     // Initial loading state
     list.innerHTML = '<p>Loading schedule...</p>';
 
-    fetch('/HomeService/backend/api/get-schedule.php', {
+    fetch(API_BASE_URL + '/get-schedule.php', {
         headers: { 'Authorization': 'Bearer ' + token }
     })
         .then(res => res.json())
@@ -1708,12 +1719,12 @@ function loadSchedule() {
             if (data.success) {
                 renderSchedule(data.schedule);
             } else {
-                list.innerHTML = '<p class="error">Failed to load schedule.</p>';
+                list.innerHTML = `<p class="empty-state" style="color:#ef4444;"><strong>Server Error:</strong> ${data.message || data.error || 'Failed to load schedule.'}</p>`;
             }
         })
         .catch(err => {
             console.error(err);
-            list.innerHTML = '<p class="error">Error loading schedule.</p>';
+            list.innerHTML = '<p class="empty-state" style="color:#ef4444;">Error loading schedule.</p>';
         });
 }
 
@@ -1876,7 +1887,7 @@ function closeChat() {
 function loadMessages(contactId, isPoll = false) {
     if (!currentChatContactId || currentChatContactId !== contactId) return;
 
-    fetch('/HomeService/backend/api/get-messages.php?contact_id=' + contactId, {
+    fetch(API_BASE_URL + '/get-messages.php?contact_id=' + contactId, {
         headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     })
         .then(res => res.json())
@@ -1932,7 +1943,7 @@ function sendMessage() {
 
     input.value = ''; // Optimistic clear
 
-    fetch('/HomeService/backend/api/send-message.php', {
+    fetch(API_BASE_URL + '/send-message.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('token'),
@@ -1982,7 +1993,7 @@ function saveSchedule() {
     const token = localStorage.getItem('token');
     showLoadingState(true);
 
-    fetch('/HomeService/backend/api/update-schedule.php', {
+    fetch(API_BASE_URL + '/update-schedule.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -2043,20 +2054,27 @@ function loadTransactions() {
     content.innerHTML = '<p class="empty-state">Loading transactions...</p>';
 
     const token = localStorage.getItem('token');
-    fetch('/HomeService/backend/api/get-transactions.php', {
+    fetch(API_BASE_URL + '/get-transactions.php', {
         headers: { 'Authorization': 'Bearer ' + token }
     })
-        .then(res => res.json())
+        .then(async res => {
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await res.text();
+                throw new Error(text.substring(0, 500));
+            }
+            return res.json();
+        })
         .then(data => {
             if (data.success) {
                 renderTransactions(data.transactions);
             } else {
-                content.innerHTML = '<p class="empty-state">Failed to load transactions.</p>';
+                content.innerHTML = `<p class="empty-state" style="color:#ef4444;"><strong>Server Error:</strong> ${data.error || data.message || 'Unknown database error.'}</p>`;
             }
         })
         .catch(err => {
             console.error(err);
-            content.innerHTML = '<p class="empty-state">Error loading transactions.</p>';
+            content.innerHTML = `<p class="empty-state" style="color:#ef4444;"><strong>Server Error:</strong> ${err.message}</p>`;
         });
 }
 
@@ -2160,11 +2178,12 @@ function initNotifications() {
     notificationPollInterval = setInterval(() => fetchNotifications(true), 5000); // Poll every 5 seconds
 }
 
+
 function fetchNotifications(allowToast = false) {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    fetch('/HomeService/backend/api/get-notifications.php', {
+    fetch(API_BASE_URL + '/get-notifications.php', {
         headers: {
             'Authorization': 'Bearer ' + token
         }
@@ -2198,6 +2217,8 @@ function fetchNotifications(allowToast = false) {
                 if (data.notifications.length > 0) {
                     lastSeenNotificationId = data.notifications[0].id;
                 }
+            } else { // Added this block
+                console.error('Failed to fetch notifications:', data.message || data.error);
             }
         })
         .catch(err => console.error('Error fetching notifications:', err));
@@ -2225,7 +2246,7 @@ function getNotificationTitle(type) {
 
 function updateNotificationUI(notifications, unreadCount) {
     const badge = document.getElementById('notificationBadge');
-    const dropdownList = document.getElementById('notificationList');
+    const dropdownList = document.getElementById('notificationDropdownList'); // Corrected ID
     const fullList = document.getElementById('fullNotificationList'); // The main page list
     const markAllBtn = document.getElementById('markAllReadBtn');
 
@@ -2409,7 +2430,7 @@ function showToast(title, message, icon, notification = null) {
 function markNotificationRead(id) {
     var token = localStorage.getItem('token');
     if (!token) return;
-    fetch('/HomeService/backend/api/mark-notification-read.php', {
+    fetch(API_BASE_URL + '/mark-notification-read.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -2430,7 +2451,7 @@ function markNotificationRead(id) {
 function markAllNotificationsRead() {
     var token = localStorage.getItem('token');
     if (!token) return;
-    fetch('/HomeService/backend/api/mark-notification-read.php', {
+    fetch(API_BASE_URL + '/mark-notification-read.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -2505,9 +2526,16 @@ function loadCalendarPage(month = null, year = null) {
     // Let's pass 1-based month to API.
     var apiMonth = calCurrentMonth + 1;
 
-    fetch('/HomeService/backend/api/bookings.php?token=' + token + '&month=' + apiMonth + '&year=' + calCurrentYear)
+    fetch(API_BASE_URL + '/bookings.php?token=' + token + '&month=' + apiMonth + '&year=' + calCurrentYear)
         .then(function (r) { return r.json(); })
         .then(function (data) {
+            if (!data.success) { // Added this block
+                const grid = document.getElementById('calendarGrid');
+                if (grid) grid.innerHTML = `<div class="empty-state" style="color:#ef4444;"><strong>Server Error:</strong> ${data.message || data.error || 'Error loading calendar bookings'}</div>`;
+                calBookings = [];
+                renderCalendarGrid();
+                return;
+            }
             calBookings = (data.success && data.bookings) ? data.bookings : [];
             renderCalendarGrid();
             renderCalendarUpcoming(); // Update simple list below too? OR maybe remove it if modal rules.
@@ -2859,21 +2887,26 @@ function loadProviderReviews() {
     // Show loading state
     contentContainer.innerHTML = '<div class="loading-spinner"></div>';
 
-    fetch('/HomeService/backend/api/get-provider-reviews.php?token=' + encodeURIComponent(token), {
+    fetch(API_BASE_URL + '/get-provider-reviews.php?token=' + encodeURIComponent(token), {
         method: 'GET',
         headers: {
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json'
         }
     })
-        .then(function (r) {
+        .then(async function (r) {
+            const contentType = r.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await r.text();
+                throw new Error(text.substring(0, 500));
+            }
             if (!r.ok) throw new Error('Network response was not ok: ' + r.statusText);
             return r.json();
         })
         .then(function (data) {
             if (!data.success) {
                 if (statsContainer) statsContainer.innerHTML = '';
-                contentContainer.innerHTML = '<div class="empty-state">' + (data.message || 'No reviews found.') + '</div>';
+                contentContainer.innerHTML = `<div class="empty-state" style="color:#ef4444;"><strong>Server Error:</strong> ${data.message || data.error || 'Unknown database error.'}</div>`;
                 return;
             }
 
@@ -2972,7 +3005,7 @@ function loadProviderReviews() {
         .catch(function (err) {
             console.error('Error loading reviews:', err);
             if (statsContainer) statsContainer.innerHTML = '';
-            contentContainer.innerHTML = '<div class="empty-state"><p>Failed to load reviews.</p></div>';
+            contentContainer.innerHTML = `<div class="empty-state" style="color:#ef4444;"><p><strong>Server Error:</strong> ${err.message}</p></div>`;
         });
 }
 
@@ -3012,7 +3045,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('token');
             showLoadingState(true);
 
-            fetch('/HomeService/backend/api/report-issue.php', {
+            fetch(API_BASE_URL + '/report-issue.php', {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + token,
@@ -3071,7 +3104,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('token');
             showLoadingState(true);
 
-            fetch('/HomeService/backend/api/submit-review.php', {
+            fetch(API_BASE_URL + '/submit-review.php', {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + token,
@@ -3107,7 +3140,7 @@ function openReceiptModal(bookingId) {
     const token = localStorage.getItem('token');
     showLoadingState(true);
 
-    fetch(`/HomeService/backend/api/bookings.php?user_type=customer`, {
+    fetch(`${API_BASE_URL}/bookings.php?user_type=customer`, {
         headers: {
             'Authorization': 'Bearer ' + token
         }
@@ -3262,7 +3295,7 @@ window.handleNotificationClick = function (id, type, relatedId) {
     // Mark as read (Background)
     const token = localStorage.getItem('token');
     if (token) {
-        fetch('/HomeService/backend/api/mark-notification-read.php', {
+        fetch(API_BASE_URL + '/mark-notification-read.php', {
             method: 'POST',
             headers: {
                 'Authorization': 'Bearer ' + token,
@@ -3326,7 +3359,7 @@ function showSingleBookingModal(booking) {
 
     var statusClass = booking.status === 'confirmed' ? 'status-confirmed'
         : booking.status === 'completed' ? 'status-completed'
-            : booking.status === 'cancelled' ? 'status-cancelled' : 'status-pending';
+            : bk.status === 'cancelled' ? 'status-cancelled' : 'status-pending';
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const isCustomer = user.user_type === 'customer';
@@ -3456,7 +3489,7 @@ async function loadFavorites() {
         }
 
         console.log('Fetching favorites...');
-        const response = await fetch('/HomeService/backend/api/get-favorites.php', {
+        const response = await fetch(API_BASE_URL + '/get-favorites.php', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
 
@@ -3479,7 +3512,7 @@ async function loadFavorites() {
                     updateSidebarBadge('badge-favorites', data.favorites ? data.favorites.length : 0);
                 }
             } else {
-                container.innerHTML = `<div class="empty-state">Failed: ${data.message}</div>`;
+                container.innerHTML = `<div class="empty-state" style="color:#ef4444;">Failed to load favorites: ${data.message || data.error || 'Unknown error'}</div>`;
             }
         } catch (e) {
             console.error('JSON Parse Error:', e);
@@ -3540,8 +3573,11 @@ function renderFavorites(favorites) {
                 <button class="btn btn-primary" style="flex: 1;" onclick="openBookingModal(${fav.service_id}, ${fav.provider_id})">
                     Book Now
                 </button>
+                <button class="btn btn-primary" style="background-color: #3b82f6; border-color: #3b82f6; flex: 1;" onclick="openChat(${fav.provider_user_id}, '${fav.provider_name ? fav.provider_name.replace(/'/g, "\\'") : ''}')">
+                    Chat
+                </button>
                 <button class="btn btn-danger" style="flex: 1;" onclick="toggleFavorite(${fav.provider_id}, this)">
-                    💔 Remove Favorite
+                    💔 Remove
                 </button>
             </div>
         `;
@@ -3559,7 +3595,7 @@ async function toggleFavorite(providerId, btnElement) {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/HomeService/backend/api/toggle-favorite.php', {
+        const response = await fetch(API_BASE_URL + '/toggle-favorite.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -115,7 +115,7 @@ function createBookingModal() {
 
 // Load services into dropdown
 function loadServices() {
-    return fetch('/HomeService/backend/api/services.php')
+    return fetch(API_BASE_URL + '/services.php')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Failed to fetch services');
@@ -340,7 +340,7 @@ async function submitBookingRaw(transactionId) {
     console.log('Sending Booking Data:', bookingData);
 
     try {
-        const res = await fetch('/HomeService/backend/api/create-booking.php', {
+        const res = await fetch(API_BASE_URL + '/create-booking.php', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -361,7 +361,7 @@ async function submitBookingRaw(transactionId) {
             closeBookingModal();
 
             // Then show notification
-            showBookingNotification('Booking Successful! Pending Verification.', 'success');
+            showBookingNotification('Booking Successful!', 'success');
 
             // Refresh logic
             if (typeof loadCustomerBookings === 'function') {
@@ -644,7 +644,7 @@ function submitBooking() {
     submitBtn.textContent = 'Booking...';
     submitBtn.disabled = true;
 
-    fetch('/HomeService/backend/api/create-booking.php', {
+    fetch(API_BASE_URL + '/create-booking.php', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -964,7 +964,7 @@ window.updateTimeSlots = function () {
 
     const params = new URLSearchParams({ date: dateVal, service_id: serviceId });
 
-    fetch(`/HomeService/backend/api/get-available-slots.php?${params.toString()}`)
+    fetch(`${API_BASE_URL}/get-available-slots.php?${params.toString()}`)
         .then(res => res.json())
         .then(data => {
             timeSelect.innerHTML = '<option value="">Select a time...</option>';

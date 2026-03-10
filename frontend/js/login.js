@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
             submitBtn.disabled = true;
 
             // Send data to backend API
-            const response = await fetch('../backend/api/login.php', {
+            const response = await fetch(API_BASE_URL + '/login.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -75,7 +75,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify(formData)
             });
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                console.error("Non-JSON Response from Server:", text);
+                throw new Error("Server Error: " + text.substring(0, 150));
+            }
 
             // Reset button state
             submitBtn.textContent = originalText;
@@ -103,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } catch (error) {
             console.error('Login error:', error);
-            showError('An error occurred. Please try again later.');
+            showError(error.message || 'An error occurred. Please try again later.');
 
             // Reset button state
             const submitBtn = loginForm.querySelector('button[type="submit"]');
@@ -215,7 +223,7 @@ function handleGoogleLogin(response) {
     console.log('Sending to backend...');
 
     // Send to backend for verification and account creation/login
-    fetch('../backend/api/google-login.php', {
+    fetch(API_BASE_URL + '/google-login.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -227,9 +235,16 @@ function handleGoogleLogin(response) {
             picture: userInfo.picture
         })
     })
-        .then(res => {
+        .then(async res => {
             console.log('Backend response status:', res.status);
-            return res.json();
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return res.json();
+            } else {
+                const text = await res.text();
+                console.error("Non-JSON Response from Server:", text);
+                throw new Error("Server Error: " + text.substring(0, 150));
+            }
         })
         .then(data => {
             console.log('Backend response:', data);
@@ -260,7 +275,9 @@ function handleGoogleLogin(response) {
         .catch(error => {
             console.error('Google login error:', error);
             const errorMessage = document.getElementById('errorMessage');
-            errorMessage.textContent = 'An error occurred during Google Sign-In. Check browser console for details.';
+            errorMessage.textContent = error.message && error.message.startsWith('Server Error')
+                ? error.message
+                : 'An error occurred during Google Sign-In. Check browser console for details.';
             errorMessage.classList.add('show');
         });
 }

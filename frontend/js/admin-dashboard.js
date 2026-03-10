@@ -90,10 +90,21 @@ function logout() {
 async function loadStats() {
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/dashboard-stats.php', {
+        const response = await fetch(API_BASE_URL + '/admin/dashboard-stats.php', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            const text = await response.text();
+            throw new Error(text.substring(0, 500));
+        }
+
         const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || data.error || 'Unknown database error');
+        }
 
         if (data.success) {
             document.getElementById('totalUsers').textContent = data.stats.total_users;
@@ -116,11 +127,11 @@ async function loadStats() {
         }
     } catch (error) {
         console.error('Error loading stats:', error);
-        document.getElementById('totalUsers').textContent = '-';
+        document.getElementById('totalUsers').innerHTML = `<span style="color:red;font-size:12px;">Error: ${error.message}</span>`;
         document.getElementById('totalProviders').textContent = '-';
         document.getElementById('totalBookings').textContent = '-';
         document.getElementById('totalRevenue').textContent = '-';
-        showNotification('Failed to load dashboard statistics', 'error');
+        showNotification('Failed to load dashboard statistics: ' + error.message, 'error');
     }
 }
 
@@ -291,7 +302,7 @@ async function loadUsers() {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/get-users.php', {
+        const response = await fetch(API_BASE_URL + '/admin/get-users.php', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         const data = await response.json();
@@ -314,7 +325,7 @@ async function loadAllBookings() {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/get-all-bookings.php', {
+        const response = await fetch(API_BASE_URL + '/admin/get-all-bookings.php', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         const data = await response.json();
@@ -390,7 +401,7 @@ async function toggleProviderVerification(userId, newStatus) {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/verify-provider.php', {
+        const response = await fetch(API_BASE_URL + '/admin/verify-provider.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -484,7 +495,7 @@ async function toggleUserStatus(userId, currentStatus) {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/update-user-status.php', {
+        const response = await fetch(API_BASE_URL + '/admin/update-user-status.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -511,7 +522,7 @@ async function deleteUser(userId) {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/delete-user.php', {
+        const response = await fetch(API_BASE_URL + '/admin/delete-user.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -538,7 +549,7 @@ async function cancelBooking(bookingId) {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/update-booking-status.php', {
+        const response = await fetch(API_BASE_URL + '/admin/update-booking-status.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -618,7 +629,7 @@ async function loadReports() {
         }
 
         console.log('Fetching from API...');
-        const response = await fetch('../backend/api/admin/get-reports.php', {
+        const response = await fetch(API_BASE_URL + '/admin/get-reports.php', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         console.log('Response status:', response.status);
@@ -700,7 +711,7 @@ async function updateReportStatus(reportId, status) {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/update-report-status.php', {
+        const response = await fetch(API_BASE_URL + '/admin/update-report-status.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -734,7 +745,7 @@ async function loadAllReviews() {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/get-all-reviews.php', {
+        const response = await fetch(API_BASE_URL + '/admin/get-all-reviews.php', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
 
@@ -802,7 +813,7 @@ async function deleteReview(id) {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/delete-review.php', {
+        const response = await fetch(API_BASE_URL + '/admin/delete-review.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -843,7 +854,7 @@ async function loadAdminServices() {
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('../backend/api/admin/get-services.php', {
+        const response = await fetch(API_BASE_URL + '/admin/get-services.php', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         const data = await response.json();
@@ -947,7 +958,7 @@ async function saveService(type) {
     }
 
     try {
-        const response = await fetch(`../backend/api/admin/${endpoint}`, {
+        const response = await fetch(`${API_BASE_URL}/admin/${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -983,7 +994,7 @@ async function deleteService(id) {
     const token = localStorage.getItem('token');
 
     try {
-        const response = await fetch('../backend/api/admin/delete-service.php', {
+        const response = await fetch(API_BASE_URL + '/admin/delete-service.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

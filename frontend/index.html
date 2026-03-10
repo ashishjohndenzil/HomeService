@@ -741,7 +741,7 @@
     </section>
 
     <!-- Call to Action Section -->
-    <section class="cta-section">
+    <section class="cta-section" id="guestCTA">
         <div class="container">
             <h2>Ready to Get Started?</h2>
             <p>Create an account and find the right professional for your needs</p>
@@ -780,6 +780,7 @@
         </div>
     </footer>
 
+    <script src="js/config.js"></script>
     <script src="js/location-autocomplete.js"></script>
     <script src="js/booking.js?v=8"></script>
     <script src="js/main.js"></script>
@@ -913,7 +914,7 @@
             }
 
             /* ---- Fetch providers ---- */
-            fetch('../backend/api/get-all-providers.php')
+            fetch(API_BASE_URL + '/get-all-providers.php')
                 .then(r => r.json())
                 .then(data => {
                     grid.innerHTML = '';

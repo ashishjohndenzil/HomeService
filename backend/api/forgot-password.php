@@ -50,7 +50,7 @@ try {
     $stmt->execute([$resetToken, $resetExpiry, $user['id']]);
     
     // Generate reset link
-    $resetLink = "http://localhost/HomeService/frontend/reset-password.html?token=" . $resetToken;
+    $resetLink = BASE_URL . "/frontend/reset-password.html?token=" . $resetToken;
     
     // Email content
     $subject = "Password Reset Request - HomeService";

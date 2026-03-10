@@ -63,8 +63,8 @@ $payload = [
         'customer_email' => $user['email'] ?? 'test@example.com'
     ],
     'order_meta' => [
-        'return_url' => 'http://localhost/HomeService/frontend/customer-dashboard.html?order_id={order_id}',
-        'notify_url' => 'http://localhost/HomeService/backend/api/webhook-cashfree.php' // Optional for localhost
+        'return_url' => BASE_URL . '/frontend/customer-dashboard.html?order_id={order_id}',
+        'notify_url' => BASE_URL . '/backend/api/webhook-cashfree.php' // Optional for localhost
     ]
 ];
 

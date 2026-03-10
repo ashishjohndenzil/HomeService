@@ -24,6 +24,11 @@ function initializeNavigation() {
             authLinks.style.display = 'none';
             userLinks.style.display = 'flex';
 
+            const guestCTA = document.getElementById('guestCTA');
+            if (guestCTA) {
+                guestCTA.style.display = 'none';
+            }
+
             const greeting = document.getElementById('userGreeting');
             if (greeting) {
                 greeting.textContent = `Welcome, ${userData.full_name}!`;

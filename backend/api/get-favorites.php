@@ -41,6 +41,7 @@ try {
             p.hourly_rate,
             s.id as service_id,
             s.name as service_name,
+            u.id as provider_user_id,
             u.full_name as provider_name,
             u.profile_image,
             u.location

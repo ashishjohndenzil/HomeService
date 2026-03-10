@@ -279,6 +279,7 @@
         }
 
     </script>
+    <script src="js/config.js"></script>
     <script src="js/location-autocomplete.js"></script>
     <script src="js/register.js"></script>
     <script>
@@ -444,7 +445,17 @@
                 },
                 body: JSON.stringify(googleRegData)
             })
-                .then(res => res.json())
+                .then(async res => {
+                    console.log('Backend response status:', res.status);
+                    const contentType = res.headers.get("content-type");
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        return res.json();
+                    } else {
+                        const text = await res.text();
+                        console.error("Non-JSON Response from Server:", text);
+                        throw new Error("Server Error: " + text.substring(0, 150));
+                    }
+                })
                 .then(data => {
                     console.log('Backend response:', data);
 
@@ -482,7 +493,9 @@
                     console.error('Google registration error:', error);
                     const errorMessage = document.getElementById('errorMessage');
                     if (errorMessage) {
-                        errorMessage.textContent = 'An error occurred. Check console.';
+                        errorMessage.textContent = error.message && error.message.startsWith('Server Error')
+                            ? error.message
+                            : 'An error occurred. Check console.';
                         errorMessage.classList.add('show');
                     }
                 });

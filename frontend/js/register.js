@@ -76,7 +76,7 @@ function validateEmail(field) {
 function checkEmailServer(field, email) {
     const suggestion = createSuggestionElement(field);
 
-    fetch(`../backend/api/check-email.php?email=${encodeURIComponent(email)}`)
+    fetch(`${API_BASE_URL}/check-email.php?email=${encodeURIComponent(email)}`)
         .then(response => response.json())
         .then(data => {
             if (data.exists) {
@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function () {
             submitBtn.disabled = true;
 
             // Send data to backend API
-            const response = await fetch('../backend/api/register.php', {
+            const response = await fetch(API_BASE_URL + '/register.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
