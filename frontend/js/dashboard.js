@@ -1472,6 +1472,20 @@ function validateDashPhone(field) {
         return false;
     }
 
+    if (cleanPhone.startsWith('0')) {
+        suggestion.textContent = 'Phone number cannot start with 0';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+
+    if (/^(\d)\1{9}$/.test(cleanPhone)) {
+        suggestion.textContent = 'Please enter a valid phone number';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+
     suggestion.textContent = '✓ Phone number looks good';
     suggestion.className = 'validation-suggestion success-suggestion';
     field.style.borderColor = '#10b981';
@@ -1542,6 +1556,14 @@ function saveProfile() {
     // Phone Validation
     if (!/^\d{10}$/.test(phone)) {
         showNotification('Phone number must be exactly 10 digits', 'error');
+        return;
+    }
+    if (phone.startsWith('0')) {
+        showNotification('Phone number cannot start with 0', 'error');
+        return;
+    }
+    if (/^(\d)\1{9}$/.test(phone)) {
+        showNotification('Please enter a valid phone number', 'error');
         return;
     }
 

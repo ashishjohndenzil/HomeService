@@ -128,12 +128,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function validateEmailField(field) {
-        let suggestion = field.parentElement.querySelector('.validation-suggestion');
+        const parentNode = field.closest('.form-group') || field.parentElement;
+        let suggestion = parentNode.querySelector('.validation-suggestion');
 
         if (!suggestion) {
             suggestion = document.createElement('small');
             suggestion.className = 'validation-suggestion';
-            field.parentElement.appendChild(suggestion);
+            parentNode.appendChild(suggestion);
         }
 
         const email = field.value.trim();
@@ -160,12 +161,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function validatePasswordField(field) {
-        let suggestion = field.parentElement.querySelector('.validation-suggestion');
+        const parentNode = field.closest('.form-group') || field.parentElement;
+        let suggestion = parentNode.querySelector('.validation-suggestion');
 
         if (!suggestion) {
             suggestion = document.createElement('small');
             suggestion.className = 'validation-suggestion';
-            field.parentElement.appendChild(suggestion);
+            parentNode.appendChild(suggestion);
         }
 
         const password = field.value;

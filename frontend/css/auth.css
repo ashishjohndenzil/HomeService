@@ -311,3 +311,29 @@
 .form-group input {
     transition: border-color 0.2s ease;
 }
+
+/* ==================== PASSWORD TOGGLE ==================== */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+.password-wrapper input {
+    width: 100%;
+    padding-right: 45px; /* Creates space for the SVG icon */
+}
+.password-toggle {
+    position: absolute;
+    right: 14px;
+    cursor: pointer;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    transition: color 0.2s ease;
+}
+.password-toggle:hover {
+    color: var(--secondary-color);
+}

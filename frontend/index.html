@@ -842,7 +842,19 @@
 
                 const filtered = allProviders.filter(p => {
                     const catOk = activeCategory === 'all' || p.service_name === activeCategory;
-                    const locOk = selLoc === 'all' || (p.location || '').toLowerCase() === selLoc.toLowerCase();
+                    
+                    let locOk = false;
+                    if (selLoc === 'all') {
+                        locOk = true;
+                    } else {
+                        const pLoc = (p.location || '').toLowerCase();
+                        const sLoc = selLoc.toLowerCase();
+                        // Allows "pala" to match "pala, meenachil" but prevents "palakkad" matching "pala"
+                        if (pLoc === sLoc || pLoc.startsWith(sLoc + ',') || sLoc.startsWith(pLoc + ',')) {
+                            locOk = true;
+                        }
+                    }
+                    
                     const ratOk = (p.rating || 0) >= minRat;
                     return catOk && locOk && ratOk;
                 });
@@ -892,11 +904,13 @@
                 });
 
                 // Locations
+                // Locations are already normalized in the fetch loop
                 const locs = [...new Set(providers.map(p => p.location).filter(Boolean))].sort();
+                
                 locs.forEach(loc => {
                     const opt = document.createElement('option');
-                    opt.value = loc;
-                    opt.textContent = loc.charAt(0).toUpperCase() + loc.slice(1);
+                    opt.value = loc.toLowerCase();
+                    opt.textContent = loc;
                     locSel.appendChild(opt);
                 });
 
@@ -923,6 +937,19 @@
                         return;
                     }
                     allProviders = data.data; // sorted by rating DESC from backend
+                    
+                    // Normalize verbose locations: keep up to 2 parts (City, Region) to distinguish same-named cities
+                    allProviders.forEach(p => {
+                        if (p.location) {
+                            let parts = p.location.split(',').map(part => {
+                                // Title case that respects spaces and hyphens
+                                return part.trim().toLowerCase().replace(/(^\w|-\w|\s\w)/g, m => m.toUpperCase());
+                            });
+                            // Keep max 2 parts
+                            p.location = parts.slice(0, 2).join(', ');
+                        }
+                    });
+
                     populateFilters(allProviders);
                     applyFilters();
                 })

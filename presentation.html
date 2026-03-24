@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Service Booking System</title>
+    <!-- Premium Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <!-- Reveal.js Base Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
+    <!-- Reveal.js Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/black.min.css" id="theme">
+
+    <style>
+        .reveal {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .reveal h1,
+        .reveal h2,
+        .reveal h3 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            text-transform: none;
+            letter-spacing: -1px;
+        }
+
+        .reveal h1 {
+            background: -webkit-linear-gradient(45deg, #0cebeb, #20e3b2, #29ffc6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .highlight {
+            color: #20e3b2;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .reveal p {
+            font-size: 0.8em;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+        }
+
+        .reveal ul {
+            margin-left: 1.5em;
+            line-height: 1.6;
+            font-size: 0.75em;
+            color: #ccc;
+        }
+
+        .reveal li {
+            margin-bottom: 12px;
+        }
+
+        .screenshot-placeholder {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 250px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8em;
+            margin-bottom: 20px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- 1. Title Slide -->
+            <section data-background-gradient="radial-gradient(circle at center, #1b2735 0%, #090a0f 100%)">
+                <h1 style="font-size: 2.8em;">Home Service<br>Booking System</h1>
+                <h3 style="color: #ccc; margin-top: 10px; font-weight: 300;">Smart and Flexible Platform</h3>
+                <p style="color: #fff; font-size: 0.8em; margin-top: 60px; text-align: center;">Presented by: <strong
+                        class="highlight">Ashish John</strong></p>
+                <div style="margin-top: 40px; font-size: 0.4em; color: #888; letter-spacing: 2px; text-align: center;">
+                    PRESS SPACE OR ARROWS TO ADVANCE</div>
+            </section>
+
+            <!-- 2. Introduction -->
+            <section>
+                <h2>2. <span class="highlight">Introduction</span></h2>
+                <div class="glass-panel">
+                    <p>A Home Service Booking System is a digital platform that enables users to book household services
+                        online in an easy and efficient way. It connects customers with skilled service providers such
+                        as electricians, plumbers, cleaners, and technicians.</p>
+                    <ul>
+                        <li>Eliminates manual searching</li>
+                        <li>Provides convenience and accessibility</li>
+                        <li>Available anytime and anywhere</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 3. Problem Statement -->
+            <section>
+                <h2>3. Problem <span class="highlight">Statement</span></h2>
+                <div class="glass-panel">
+                    <p>In the traditional system, users face several challenges when trying to book home services.
+                        Finding reliable professionals is difficult, and the process is often time-consuming.</p>
+                    <ul>
+                        <li>Lack of trusted service providers</li>
+                        <li>Time-consuming booking process</li>
+                        <li>No transparency in pricing</li>
+                        <li>No proper scheduling system</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 4. Proposed Solution -->
+            <section>
+                <h2>4. Proposed <span class="highlight">Solution</span></h2>
+                <div class="glass-panel" style="border-left: 4px solid #20e3b2;">
+                    <p>The system provides an online platform where users can easily search, book, and manage home
+                        services. It ensures verified service providers and smooth service delivery.</p>
+                    <ul>
+                        <li>Online booking system</li>
+                        <li>Verified professionals</li>
+                        <li>Easy scheduling</li>
+                        <li>Secure payment system</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 5. Objectives -->
+            <section>
+                <h2>5. <span class="highlight">Objectives</span></h2>
+                <div class="glass-panel">
+                    <p>The main objective of this system is to simplify and modernize the process of booking home
+                        services.</p>
+                    <ul>
+                        <li>Provide an easy-to-use interface</li>
+                        <li>Ensure reliable and quality services</li>
+                        <li>Save time and effort</li>
+                        <li>Improve user satisfaction</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 6. Scope of the System -->
+            <section>
+                <h2>6. <span class="highlight">Scope</span> of the System</h2>
+                <div class="glass-panel">
+                    <p>This system is designed for multiple users including customers, service providers, and
+                        administrators. It supports a wide range of home services and can be extended further.</p>
+                    <ul>
+                        <li>Multi-user platform</li>
+                        <li>Covers multiple service categories</li>
+                        <li>Expandable to mobile apps</li>
+                        <li>Supports real-time operations</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 7. System Architecture -->
+            <section>
+                <h2>7. System <span class="highlight">Architecture</span></h2>
+                <div class="glass-panel">
+                    <p>The system follows a client-server architecture. The frontend interacts with the backend, which
+                        processes requests and communicates with the database.</p>
+                    <ul>
+                        <li><strong>Frontend:</strong> HTML, CSS, JavaScript</li>
+                        <li><strong>Backend:</strong> PHP</li>
+                        <li><strong>Database:</strong> MySQL</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 8. Modules of the System -->
+            <section>
+                <h2>8. <span class="highlight">Modules</span> of the System</h2>
+                <div class="glass-panel">
+                    <p>The system is divided into three main modules to ensure proper functionality and management.</p>
+                    <ul style="list-style-type: none; margin-top: 20px;">
+                        <li style="font-size: 1.1em; border-bottom: 2px solid #20e3b2; padding-bottom: 10px;">User
+                            Module</li>
+                        <li style="font-size: 1.1em; border-bottom: 2px solid #20e3b2; padding-bottom: 10px;">Admin
+                            Module</li>
+                        <li style="font-size: 1.1em;">Service Provider Module</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 9. User Module -->
+            <section>
+                <h2>9. <span class="highlight">User</span> Module</h2>
+                <div class="glass-panel">
+                    <p>The user module allows customers to interact with the system and book services easily.</p>
+                    <ul>
+                        <li>Register and login</li>
+                        <li>Browse services</li>
+                        <li>Book services</li>
+                        <li>View booking history</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 10. Admin Module -->
+            <section>
+                <h2>10. <span class="highlight">Admin</span> Module</h2>
+                <div class="glass-panel">
+                    <p>The admin module controls the entire system and ensures smooth operation.</p>
+                    <ul>
+                        <li>Manage users and providers</li>
+                        <li>Add/update/delete services</li>
+                        <li>Monitor bookings</li>
+                        <li>Generate reports</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 11. Service Provider Module -->
+            <section>
+                <h2>11. <span class="highlight">Service Provider</span> Module</h2>
+                <div class="glass-panel">
+                    <p>This module allows service providers to manage their tasks and availability.</p>
+                    <ul>
+                        <li>Accept or reject bookings</li>
+                        <li>Update availability</li>
+                        <li>Manage profile and services</li>
+                        <li>View assigned jobs</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 12. Key Features -->
+            <section>
+                <h2>12. Key <span class="highlight">Features</span></h2>
+                <div class="glass-panel">
+                    <p>The system includes various features that enhance usability and efficiency.</p>
+                    <ul>
+                        <li>User-friendly interface</li>
+                        <li>Secure authentication</li>
+                        <li>Real-time booking</li>
+                        <li>Online payment integration</li>
+                        <li>Ratings and reviews</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 13. Database Design -->
+            <section>
+                <h2>13. Database <span class="highlight">Design</span></h2>
+                <div class="glass-panel">
+                    <p>The system uses a relational database to store and manage data efficiently.</p>
+                    <ul>
+                        <li>Users Table</li>
+                        <li>Services Table</li>
+                        <li>Bookings Table</li>
+                        <li>Payments Table</li>
+                        <li>Maintains relationships between data</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 14. Technologies Used -->
+            <section>
+                <h2>14. Technologies <span class="highlight">Used</span></h2>
+                <div class="glass-panel">
+                    <p>The system is developed using modern web technologies.</p>
+                    <ul>
+                        <li><strong>Frontend:</strong> HTML, CSS, JavaScript</li>
+                        <li><strong>Backend:</strong> PHP</li>
+                        <li><strong>Database:</strong> MySQL</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 15. Screenshots Section 1 -->
+            <section>
+                <h2>Screenshots<span class="highlight"></span></h2>
+                <div class="grid-2">
+                    <div>
+                        <div class="screenshot-placeholder">
+                            <span>📷 [Customer Dashboard Screenshot]</span>
+                        </div>
+                        <p style="font-size: 0.5em; text-align: center;">Customer Dashboard</p>
+                    </div>
+                    <div>
+                        <div class="screenshot-placeholder">
+                            <span>📷 [Booking Form Screenshot]</span>
+                        </div>
+                        <p style="font-size: 0.5em; text-align: center;">Service Booking Screen</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 16. Screenshots Section 2 -->
+            <section>
+                <h2>Screenshots<span class="highlight"></span></h2>
+                <div class="grid-2">
+                    <div>
+                        <div class="screenshot-placeholder">
+                            <span>📷 [Admin Dashboard Screenshot]</span>
+                        </div>
+                        <p style="font-size: 0.5em; text-align: center;">Admin Control Panel</p>
+                    </div>
+                    <div>
+                        <div class="screenshot-placeholder">
+                            <span>📷 [Provider Dashboard Screenshot]</span>
+                        </div>
+                        <p style="font-size: 0.5em; text-align: center;">Provider Job Management</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 17. Advantages -->
+            <section>
+                <h2>17. <span class="highlight">Advantages</span></h2>
+                <div class="glass-panel" style="border-left: 4px solid #20e3b2;">
+                    <p>This system provides multiple benefits to users and service providers.</p>
+                    <ul>
+                        <li>Saves time and effort</li>
+                        <li>Easy access to services</li>
+                        <li>Reliable and secure system</li>
+                        <li>Transparent pricing</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 18. Limitations -->
+            <section>
+                <h2>18. <span class="highlight" style="color:#ff79c6;">Limitations</span></h2>
+                <div class="glass-panel" style="border-left: 4px solid #ff79c6;">
+                    <p>Despite its advantages, the system has some limitations.</p>
+                    <ul>
+                        <li>Requires internet connection</li>
+                        <li>Service availability may vary</li>
+                        <li>Initial development cost</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 19. Future Enhancements -->
+            <section>
+                <h2>19. Future <span class="highlight">Enhancements</span></h2>
+                <div class="glass-panel">
+                    <p>The system can be further improved by adding advanced features.</p>
+                    <ul>
+                        <li>Mobile application development</li>
+                        <li>AI-based recommendations</li>
+                        <li>Live tracking of service providers</li>
+                        <li>Chat and support system</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 20. Conclusion -->
+            <section>
+                <h2>20. <span class="highlight">Conclusion</span></h2>
+                <div class="glass-panel">
+                    <p>The system successfully simplifies home service booking.</p>
+                    <ul>
+                        <li>Improves user convenience and satisfaction</li>
+                        <li>Provides a scalable and efficient online solution</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 21. Thank You Slide -->
+            <section data-background-gradient="linear-gradient(135deg, #090a0f 0%, #1b2735 100%)">
+                <h1
+                    style="background: -webkit-linear-gradient(45deg, #f1c40f, #e67e22); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 4em;">
+                    Thank You</h1>
+                <h3 style="color: white; margin-top: 20px;">Questions?</h3>
+                <p style="color: rgba(255,255,255,0.4); font-size: 0.5em; margin-top: 40px;">Ashish John</p>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            transition: 'slide',
+            controls: true,
+            progress: true,
+            center: true,
+            width: 1000
+        });
+    </script>
+</body>
+
+</html>

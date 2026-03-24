@@ -1,10 +1,11 @@
 // Validation functions - Declare outside DOMContentLoaded so they're available
 function createSuggestionElement(field) {
-    let suggestion = field.parentElement.querySelector('.validation-suggestion');
+    const parentNode = field.closest('.form-group') || field.parentElement;
+    let suggestion = parentNode.querySelector('.validation-suggestion');
     if (!suggestion) {
         suggestion = document.createElement('small');
         suggestion.className = 'validation-suggestion';
-        field.parentElement.appendChild(suggestion);
+        parentNode.appendChild(suggestion);
     }
     return suggestion;
 }
@@ -128,6 +129,20 @@ function validatePhone(field) {
         } else {
             suggestion.textContent = `Phone number cannot exceed 10 digits (you have ${cleanPhone.length})`;
         }
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+
+    if (cleanPhone.startsWith('0')) {
+        suggestion.textContent = 'Phone number cannot start with 0';
+        suggestion.className = 'validation-suggestion warning-suggestion';
+        field.style.borderColor = '#f59e0b';
+        return false;
+    }
+
+    if (/^(\d)\1{9}$/.test(cleanPhone)) {
+        suggestion.textContent = 'Please enter a valid phone number';
         suggestion.className = 'validation-suggestion warning-suggestion';
         field.style.borderColor = '#f59e0b';
         return false;
@@ -359,7 +374,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Phone validation (basic)
         const phoneRegex = /^[\d\s\-\+\(\)]+$/;
-        if (!phoneRegex.test(phone) || phone.length < 10) {
+        const cleanPhoneSubmit = phone.replace(/\D/g, '');
+        if (!phoneRegex.test(phone) || cleanPhoneSubmit.length < 10 || cleanPhoneSubmit.startsWith('0') || /^(\d)\1{9}$/.test(cleanPhoneSubmit)) {
             showError('Please enter a valid phone number');
             return;
         }
