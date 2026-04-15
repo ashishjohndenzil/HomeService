@@ -1,0 +1,12 @@
+# Secrets and config files
+backend/config.php
+backend/config.local.php
+backend/api/cashfree_config.php
+backend/api/cashfree_config.local.php
+
+# Logs
+backend/*.log
+*.log
+
+# Environment files
+.env
